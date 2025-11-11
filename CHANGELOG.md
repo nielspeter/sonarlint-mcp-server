@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.1.2...v0.1.3) (2025-11-11)
+
+
+### Features
+
+* add apply_all_quick_fixes tool for batch fixing ([e81beaf](https://github.com/nielspeter/sonarlint-mcp-server/commit/e81beafb9bc12e82df805c4166c66024e890b473))
+
+
+### Documentation
+
+* clarify that apply_quick_fix fixes one issue at a time ([224f216](https://github.com/nielspeter/sonarlint-mcp-server/commit/224f216755f16e9bb47781d33626ea7d828e61f5))
+
 ### [0.1.2](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.1.1...v0.1.2) (2025-11-11)
 
 
