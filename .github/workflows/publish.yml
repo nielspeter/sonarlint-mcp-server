@@ -6,8 +6,8 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
-  id-token: write
+  id-token: write  # Required for OIDC trusted publishing
+  contents: write  # Required for creating GitHub releases
 
 jobs:
   publish:
@@ -22,6 +22,9 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -32,9 +35,7 @@ jobs:
         run: npm run build
 
       - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
 
       - name: Extract version from tag
         id: extract_version
