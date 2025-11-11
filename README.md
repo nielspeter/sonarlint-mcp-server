@@ -3,7 +3,7 @@
 A Model Context Protocol (MCP) server that brings enterprise-grade code analysis to Claude Desktop and other MCP clients using SonarLint's standalone SLOOP backend.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
 ## Features
 
@@ -19,7 +19,7 @@ A Model Context Protocol (MCP) server that brings enterprise-grade code analysis
 
 ### Prerequisites
 
-- Node.js 18.0.0 or higher
+- Node.js 20.0.0 or higher
 - Claude Desktop (or any MCP client)
 
 ### Installation
