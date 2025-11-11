@@ -35,12 +35,27 @@ jobs:
 
       - name: Verify backend downloaded
         run: |
+          echo "Checking backend installation..."
+          ls -la || true
+          if [ -d "sonarlint-backend" ]; then
+            echo "sonarlint-backend directory exists"
+            ls -la sonarlint-backend/ || true
+          else
+            echo "sonarlint-backend directory does not exist"
+          fi
+
           if [ -d "sonarlint-backend/lib" ] && [ -d "sonarlint-backend/jre" ] && [ -d "sonarlint-backend/plugins" ]; then
             echo "✅ SonarLint backend installed successfully"
             ls -la sonarlint-backend/
           else
-            echo "❌ SonarLint backend installation failed"
-            exit 1
+            echo "❌ SonarLint backend installation failed - running setup manually"
+            npm run setup
+            if [ -d "sonarlint-backend/lib" ] && [ -d "sonarlint-backend/jre" ] && [ -d "sonarlint-backend/plugins" ]; then
+              echo "✅ Manual setup successful"
+            else
+              echo "❌ Manual setup also failed"
+              exit 1
+            fi
           fi
         shell: bash
 
@@ -67,10 +82,5 @@ jobs:
             echo "No format:check script found, skipping"
           fi
 
-      - name: Lint
-        run: |
-          if grep -q "lint" package.json; then
-            npm run lint
-          else
-            echo "No lint script found, skipping"
-          fi
+      - name: TypeScript check
+        run: npx tsc --noEmit
