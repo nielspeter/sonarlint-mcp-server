@@ -584,7 +584,7 @@ const tools: Tool[] = [
   },
   {
     name: "apply_quick_fix",
-    description: "Apply a quick fix suggestion from a previous analysis. Modifies the file directly to fix the issue.",
+    description: "Apply a quick fix for ONE SPECIFIC ISSUE at a time. Fixes only the single issue identified by filePath + line + rule. To fix multiple issues, call this tool multiple times (once per issue). The file is modified directly.",
     inputSchema: {
       type: "object",
       properties: {
