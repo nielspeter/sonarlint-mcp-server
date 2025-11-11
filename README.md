@@ -159,7 +159,7 @@ The server uses SonarLint's standalone SLOOP backend with:
 - **Version:** 10.32.0.82302 (WebStorm-compatible)
 - **Bundled JRE:** Java 17
 - **Bi-directional RPC:** Client request handlers implemented
-- **Analysis Caching:** 5-minute TTL with modification detection
+- **Session Storage:** Results stored in memory for multi-turn conversations
 
 ## Development
 
@@ -214,7 +214,7 @@ This project demonstrates several key technical achievements:
 1. **Standalone SLOOP** - First documented standalone use of SonarLint's SLOOP backend
 2. **Bi-directional RPC** - Complete client request handler implementation
 3. **MCP Integration** - Full Model Context Protocol implementation with resources
-4. **Smart Caching** - File modification tracking with TTL-based invalidation
+4. **Session Management** - Results storage for multi-turn conversations
 5. **Production Ready** - Comprehensive testing, error handling, and monitoring
 
 ### Critical Implementation Details
