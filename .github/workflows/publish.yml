@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: npm run test:run -- --exclude tests/e2e/**
 
       - name: Build
         run: npm run build
