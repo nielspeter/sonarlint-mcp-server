@@ -31,7 +31,7 @@ npm install
 
 **Solution**:
 ```bash
-# Check Node.js version (must be 18.0.0+)
+# Check Node.js version (must be 22.7.5+)
 node --version
 
 # Clean and rebuild
@@ -133,7 +133,7 @@ ls -la sonarlint-backend/plugins/
 3. **Verify MCP SDK version**:
    ```bash
    npm list @modelcontextprotocol/sdk
-   # Should be 0.5.0 or higher
+   # Should be 1.21.1 or higher
    ```
 
 ### "Server crashed" or "Server not responding"
@@ -251,10 +251,9 @@ realpath ./relative/path/file.js
    - eslint-bridge initialization
    - **This is normal!** Subsequent analyses are fast.
 
-2. **Cache not working**:
-   - Cache has 5-minute TTL
-   - Files are re-analyzed if modified
-   - Ask Claude: "Run health_check" to see cache statistics
+2. **Subsequent analyses should be faster**:
+   - Files are re-analyzed on each request
+   - SLOOP maintains internal state for performance
 
 3. **Large file**:
    ```bash
@@ -303,10 +302,8 @@ realpath ./relative/path/file.js
    # Memory should be stable
    ```
 
-2. **Clear caches**:
-   - Session cache clears automatically after 5 minutes
+2. **Restart server**:
    - Restart Claude Desktop to fully clear server state
-   - Ask Claude: "Run health_check" to see current cache size
 
 3. **Reduce concurrent analyses**:
    - Avoid analyzing 10+ files simultaneously
@@ -419,9 +416,9 @@ npm run setup
 # Check version
 node --version
 
-# Must be v18.x or higher
+# Must be v22.7.5 or higher
 # If older, update Node.js:
-# - Use nvm: nvm install 18
+# - Use nvm: nvm install 22
 # - Or download from: https://nodejs.org
 ```
 
@@ -440,7 +437,7 @@ which node
 
 # Test Node.js works
 node --version
-# Should show: v18.x or higher
+# Should show: v22.7.5 or higher
 
 # Check SLOOP configuration in src/sloop-bridge.ts
 # Should have: clientNodeJsPath: process.execPath

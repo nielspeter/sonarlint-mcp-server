@@ -132,13 +132,6 @@ export class MCPTestClient {
   }
 
   /**
-   * Helper: Apply quick fix
-   */
-  async applyQuickFix(filePath: string, line: number, rule: string): Promise<any> {
-    return this.callTool('apply_quick_fix', { filePath, line, rule });
-  }
-
-  /**
    * Helper: Apply all quick fixes
    */
   async applyAllQuickFixes(filePath: string): Promise<any> {
@@ -146,36 +139,10 @@ export class MCPTestClient {
   }
 
   /**
-   * Helper: List active rules
-   */
-  async listActiveRules(language?: string): Promise<any> {
-    return this.callTool('list_active_rules', language ? { language } : {});
-  }
-
-  /**
    * Helper: Health check
    */
   async healthCheck(): Promise<any> {
     return this.callTool('health_check', {});
-  }
-
-  /**
-   * Helper: Analyze content
-   */
-  async analyzeContent(content: string, language: string, fileName?: string): Promise<any> {
-    return this.callTool('analyze_content', { content, language, fileName });
-  }
-
-  /**
-   * Helper: Analyze project
-   */
-  async analyzeProject(projectPath: string, options?: {
-    maxFiles?: number;
-    minSeverity?: string;
-    excludeRules?: string[];
-    includePatterns?: string[];
-  }): Promise<any> {
-    return this.callTool('analyze_project', { projectPath, ...options });
   }
 }
 

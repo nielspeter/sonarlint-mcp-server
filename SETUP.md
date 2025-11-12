@@ -6,14 +6,14 @@ This guide will walk you through setting up the SonarLint MCP Server for use wit
 
 Before starting, ensure you have:
 
-- **Node.js** version 18.0.0 or higher
+- **Node.js** version 22.7.5 or higher
 - **npm** package manager
 - **Claude Desktop** application installed
 - **Operating System**: macOS (ARM64/x64), Linux (ARM64/x64), or Windows (x64)
 
 You can verify your Node.js version:
 ```bash
-node --version  # Should be v18.0.0 or higher
+node --version  # Should be v22.7.5 or higher
 npm --version
 ```
 
@@ -150,7 +150,6 @@ Claude should be able to call the `health_check` tool and show:
 - Backend status and uptime
 - Active plugins and versions
 - Memory usage
-- Cache statistics
 
 ### 2. Test File Analysis
 
@@ -214,7 +213,6 @@ Currently supported languages:
 
 ## Features
 
-- **Analysis Caching**: 5-minute TTL for performance
 - **Quick Fixes**: Automated fix suggestions
 - **Batch Analysis**: Analyze multiple files efficiently
 - **Content Analysis**: Analyze unsaved code snippets
@@ -250,7 +248,7 @@ If you encounter issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for comm
    # Check version
    node --version
 
-   # Should be v18.x or higher
+   # Should be v22.7.5 or higher
    ```
 
 4. **Claude Desktop not seeing server**:

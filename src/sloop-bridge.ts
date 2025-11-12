@@ -634,17 +634,4 @@ export class SloopBridge extends EventEmitter {
     }
   }
 
-  async getRuleDetails(configScopeId: string, ruleKey: string): Promise<any> {
-    return this.sendRequest('getRuleDetails', {
-      configScopeId: configScopeId,
-      ruleKey
-    });
-  }
-
-  async getEffectiveIssueDetails(configScopeId: string, issueId: string): Promise<any> {
-    return this.sendRequest('issue/getEffectiveIssueDetails', {
-      configurationScopeId: configScopeId,
-      issueId
-    });
-  }
 }
