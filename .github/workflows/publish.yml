@@ -52,19 +52,17 @@ jobs:
             npx @nielspeter/sonarlint-mcp-server
             ```
 
-            Or install globally:
+            ## Configuration
 
-            ```bash
-            npm install -g @nielspeter/sonarlint-mcp-server
-            ```
-
-            ## Configure Claude Desktop
+            ### Claude Code
 
             ```bash
             claude mcp add --transport stdio sonarlint -- npx -y @nielspeter/sonarlint-mcp-server
             ```
 
-            Or manually add to `claude_desktop_config.json`:
+            ### Claude Desktop
+
+            Manually add to `claude_desktop_config.json`:
 
             ```json
             {

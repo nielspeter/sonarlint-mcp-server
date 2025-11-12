@@ -29,15 +29,7 @@ npx @nielspeter/sonarlint-mcp-server
 
 The SLOOP backend (~70MB) downloads automatically on first run via postinstall script.
 
-### Method 2: Global Installation
-
-Install once and use anywhere:
-
-```bash
-npm install -g @nielspeter/sonarlint-mcp-server
-```
-
-### Method 3: From Source (For Development)
+### Method 2: From Source (For Development)
 
 #### 1. Clone the Repository
 
@@ -88,19 +80,19 @@ This runs the Vitest test suite which validates:
 - JavaScript and Python plugin detection
 - Quick fix support
 
-## Claude Desktop Configuration
+## Configuration
 
-You can configure Claude Desktop using the CLI (recommended) or manually edit the config file.
+### Configure with Claude Code
 
-### Method 1: Using Claude Code CLI (Recommended)
+Use the Claude CLI to add the MCP server:
 
 ```bash
 claude mcp add --transport stdio sonarlint -- npx -y @nielspeter/sonarlint-mcp-server
 ```
 
-This automatically updates your Claude Desktop configuration. Skip to "Restart Claude Desktop" below.
+This automatically updates your Claude Code configuration. No restart needed!
 
-### Method 2: Manual Configuration
+### Configure with Claude Desktop
 
 #### 1. Locate Claude Desktop Config
 
@@ -127,7 +119,7 @@ Edit the config file and add the SonarLint MCP server:
 
 The `-y` flag automatically accepts the npx prompt.
 
-### 3. Restart Claude Desktop
+#### 3. Restart Claude Desktop
 
 After saving the configuration:
 
