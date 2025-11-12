@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.1.3...v0.2.0) (2025-11-12)
+
+
+### Code Refactoring
+
+* Modularize codebase - split large index.ts into focused modules ([c85ff94](https://github.com/nielspeter/sonarlint-mcp-server/commit/c85ff94cd334943b31a5118aad5a7a44fc35f20d))
+
+
+### Documentation
+
+* add CLAUDE.md development guide ([51dfcfc](https://github.com/nielspeter/sonarlint-mcp-server/commit/51dfcfcec1a710ab3279da452ff1854fa4df0a97))
+* Fix outdated information in SETUP.md and TROUBLESHOOTING.md ([f34274a](https://github.com/nielspeter/sonarlint-mcp-server/commit/f34274aab37ce1dbefa4889e1c28f75ab7cc1de0))
+* Remove redundant SLOOP-RPC-INTERNALS.md ([fd25915](https://github.com/nielspeter/sonarlint-mcp-server/commit/fd259150b3aa0e8c3f4e1b477c5de104330b20e4))
+* Update TESTING.md to reflect current test structure ([d22e4a2](https://github.com/nielspeter/sonarlint-mcp-server/commit/d22e4a2fa3d34980692c5ee04bfb4250eef48f02))
+
 ### [0.1.3](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.1.2...v0.1.3) (2025-11-11)
 
 
