@@ -8,19 +8,21 @@ VERSION="10.32.0.82302"
 BACKEND_DIR="./sonarlint-backend"
 MAVEN_BASE="https://repo1.maven.org/maven2/org/sonarsource/sonarlint/core/sonarlint-backend-cli/${VERSION}"
 
-echo "🚀 Setting up SonarLint Backend v${VERSION}..."
+JS_PLUGIN_VERSION="11.3.0.34350"
+PYTHON_PLUGIN_VERSION="5.16.0.29940"
+
+echo "Setting up SonarLint Backend v${VERSION}..."
 echo ""
 
-# Check if already installed
 if [ -d "$BACKEND_DIR/lib" ] && [ -d "$BACKEND_DIR/jre" ] && [ -d "$BACKEND_DIR/plugins" ]; then
-  echo "✅ SonarLint backend already installed"
+  echo "SonarLint backend already installed"
   echo "   To reinstall, run: rm -rf $BACKEND_DIR && npm run setup"
   exit 0
 fi
 
-# Detect OS and architecture
 OS=$(uname -s)
 ARCH=$(uname -m)
+IS_WINDOWS=false
 
 case "$OS" in
   Darwin)
@@ -44,9 +46,10 @@ case "$OS" in
   MINGW*|MSYS*|CYGWIN*)
     DIST_FILE="sonarlint-backend-cli-${VERSION}-windows_x64.zip"
     PLATFORM="Windows x64"
+    IS_WINDOWS=true
     ;;
   *)
-    echo "❌ Unsupported OS: $OS"
+    echo "ERROR: Unsupported OS: $OS"
     echo "   Supported platforms: macOS (ARM64/x64), Linux (ARM64/x64), Windows (x64)"
     exit 1
     ;;
@@ -55,61 +58,131 @@ esac
 echo "Platform detected: $PLATFORM"
 echo ""
 
-# Clean existing installation
 if [ -d "$BACKEND_DIR" ]; then
-  echo "🧹 Cleaning existing installation..."
+  echo "Cleaning existing installation..."
   rm -rf "$BACKEND_DIR"
 fi
 
 mkdir -p "$BACKEND_DIR"
 
 echo ""
-echo "📦 Step 1/2: Downloading SonarLint Backend..."
+echo "Step 1/3: Downloading SonarLint Backend..."
 echo "   URL: $MAVEN_BASE/$DIST_FILE"
 echo ""
 
-# Download the platform-specific distribution
-curl -L --progress-bar -o "/tmp/${DIST_FILE}" "$MAVEN_BASE/$DIST_FILE"
+TEMP_DIR=$(mktemp -d)
+EXTRACT_DIR="$TEMP_DIR/extract"
+mkdir -p "$EXTRACT_DIR"
+
+cleanup() {
+  rm -rf "$TEMP_DIR"
+}
+trap cleanup EXIT
+
+curl -L --progress-bar -o "$TEMP_DIR/${DIST_FILE}" "$MAVEN_BASE/$DIST_FILE"
 
 echo ""
-echo "📂 Extracting backend..."
+echo "Extracting backend..."
 
-# Extract (auto-detects tar.gz or zip)
 if [[ "$DIST_FILE" == *.zip ]]; then
-  unzip -q "/tmp/${DIST_FILE}" -d "/tmp/sonarlint-extract"
+  if ! command -v unzip &> /dev/null; then
+    echo "ERROR: 'unzip' is required but not installed"
+    exit 1
+  fi
+  unzip -q "$TEMP_DIR/${DIST_FILE}" -d "$EXTRACT_DIR"
 else
-  mkdir -p "/tmp/sonarlint-extract"
-  tar -xzf "/tmp/${DIST_FILE}" -C "/tmp/sonarlint-extract"
+  tar -xzf "$TEMP_DIR/${DIST_FILE}" -C "$EXTRACT_DIR"
 fi
 
-# Move extracted contents to backend directory
-# The tarball extracts directly to jre/ and lib/ (no parent directory)
-mv /tmp/sonarlint-extract/* "$BACKEND_DIR/"
-rm -rf "/tmp/sonarlint-extract"
-rm "/tmp/${DIST_FILE}"
+SOURCE_DIR=""
+if [ -d "$EXTRACT_DIR/jre" ] && [ -d "$EXTRACT_DIR/lib" ]; then
+  SOURCE_DIR="$EXTRACT_DIR"
+else
+  SUBDIR_COUNT=$(find "$EXTRACT_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+  if [ "$SUBDIR_COUNT" -eq 1 ]; then
+    SINGLE_DIR=$(find "$EXTRACT_DIR" -mindepth 1 -maxdepth 1 -type d)
+    if [ -d "$SINGLE_DIR/jre" ] && [ -d "$SINGLE_DIR/lib" ]; then
+      SOURCE_DIR="$SINGLE_DIR"
+    fi
+  fi
+fi
+
+if [ -z "$SOURCE_DIR" ]; then
+  echo "ERROR: Unexpected archive layout. Expected jre/ and lib/ directories."
+  echo "Archive contents:"
+  ls -la "$EXTRACT_DIR"
+  exit 1
+fi
+
+mv "$SOURCE_DIR"/* "$BACKEND_DIR/"
 
 echo ""
-echo "🔌 Step 2/2: Downloading Language Plugins..."
+echo "Step 2/3: Validating backend installation..."
+
+JAR_COUNT=$(find "$BACKEND_DIR/lib" -name "*.jar" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$JAR_COUNT" -lt 10 ]; then
+  echo "ERROR: Backend lib/ directory missing or incomplete (found $JAR_COUNT JARs, expected 50+)"
+  exit 1
+fi
+echo "   lib/: $JAR_COUNT JARs"
+
+JAVA_PATH=""
+if [ "$IS_WINDOWS" = true ]; then
+  if [ -f "$BACKEND_DIR/jre/bin/java.exe" ]; then
+    JAVA_PATH="$BACKEND_DIR/jre/bin/java.exe"
+  elif [ -f "$BACKEND_DIR/jre/bin/java" ]; then
+    JAVA_PATH="$BACKEND_DIR/jre/bin/java"
+  fi
+else
+  if [ -f "$BACKEND_DIR/jre/bin/java" ]; then
+    JAVA_PATH="$BACKEND_DIR/jre/bin/java"
+  fi
+fi
+
+if [ -z "$JAVA_PATH" ]; then
+  echo "ERROR: JRE not found at $BACKEND_DIR/jre/bin/java"
+  exit 1
+fi
+echo "   jre/: $(basename "$JAVA_PATH") found"
+
+echo ""
+echo "Step 3/3: Downloading Language Plugins..."
 echo ""
 
 PLUGINS_DIR="$BACKEND_DIR/plugins"
 mkdir -p "$PLUGINS_DIR"
 
-# JavaScript/TypeScript Plugin (WebStorm 2025.2 compatible)
-echo "- JavaScript/TypeScript 11.3.0..."
-curl -L --progress-bar -o "$PLUGINS_DIR/sonar-javascript-plugin-11.3.0.34350.jar" \
-  "https://repo1.maven.org/maven2/org/sonarsource/javascript/sonar-javascript-plugin/11.3.0.34350/sonar-javascript-plugin-11.3.0.34350.jar"
+JS_PLUGIN="sonar-javascript-plugin-${JS_PLUGIN_VERSION}.jar"
+echo "- JavaScript/TypeScript ${JS_PLUGIN_VERSION%.*}..."
+curl -L --progress-bar -o "$PLUGINS_DIR/$JS_PLUGIN" \
+  "https://repo1.maven.org/maven2/org/sonarsource/javascript/sonar-javascript-plugin/${JS_PLUGIN_VERSION}/$JS_PLUGIN"
 
-# Python Plugin
-echo "- Python 5.16.0..."
-curl -L --progress-bar -o "$PLUGINS_DIR/sonar-python-plugin-5.16.0.29940.jar" \
-  "https://repo1.maven.org/maven2/org/sonarsource/python/sonar-python-plugin/5.16.0.29940/sonar-python-plugin-5.16.0.29940.jar"
+PYTHON_PLUGIN="sonar-python-plugin-${PYTHON_PLUGIN_VERSION}.jar"
+echo "- Python ${PYTHON_PLUGIN_VERSION%.*}..."
+curl -L --progress-bar -o "$PLUGINS_DIR/$PYTHON_PLUGIN" \
+  "https://repo1.maven.org/maven2/org/sonarsource/python/sonar-python-plugin/${PYTHON_PLUGIN_VERSION}/$PYTHON_PLUGIN"
 
-# Extract eslint-bridge from JavaScript plugin
 echo ""
-echo "📤 Extracting eslint-bridge..."
+echo "Validating plugins..."
+
+JS_SIZE=$(stat -f%z "$PLUGINS_DIR/$JS_PLUGIN" 2>/dev/null || stat -c%s "$PLUGINS_DIR/$JS_PLUGIN" 2>/dev/null || echo "0")
+if [ "$JS_SIZE" -lt 1000000 ]; then
+  echo "ERROR: JavaScript plugin download failed or incomplete (size: $JS_SIZE bytes)"
+  exit 1
+fi
+echo "   $JS_PLUGIN: $(( JS_SIZE / 1024 / 1024 ))MB"
+
+PYTHON_SIZE=$(stat -f%z "$PLUGINS_DIR/$PYTHON_PLUGIN" 2>/dev/null || stat -c%s "$PLUGINS_DIR/$PYTHON_PLUGIN" 2>/dev/null || echo "0")
+if [ "$PYTHON_SIZE" -lt 1000000 ]; then
+  echo "ERROR: Python plugin download failed or incomplete (size: $PYTHON_SIZE bytes)"
+  exit 1
+fi
+echo "   $PYTHON_PLUGIN: $(( PYTHON_SIZE / 1024 / 1024 ))MB"
+
+echo ""
+echo "Extracting eslint-bridge..."
 cd "$PLUGINS_DIR"
-unzip -q sonar-javascript-plugin-11.3.0.34350.jar sonarjs-1.0.0.tgz 2>/dev/null || true
+unzip -q "$JS_PLUGIN" sonarjs-1.0.0.tgz 2>/dev/null || true
 if [ -f sonarjs-1.0.0.tgz ]; then
   mkdir -p eslint-bridge
   tar -xzf sonarjs-1.0.0.tgz -C eslint-bridge
@@ -117,23 +190,25 @@ if [ -f sonarjs-1.0.0.tgz ]; then
 fi
 cd - > /dev/null
 
+if [ ! -f "$PLUGINS_DIR/eslint-bridge/package/bin/server.cjs" ]; then
+  echo "WARNING: eslint-bridge extraction may have failed"
+  echo "   Expected: $PLUGINS_DIR/eslint-bridge/package/bin/server.cjs"
+fi
+
 echo ""
-echo "✅ Setup Complete!"
+echo "Setup Complete!"
 echo ""
-echo "📊 Installation Summary:"
+echo "Installation Summary:"
 echo "  Platform: $PLATFORM"
-echo "  Backend:  $BACKEND_DIR/lib/"
-echo "  JRE:      $BACKEND_DIR/jre/"
+echo "  Backend:  $BACKEND_DIR/lib/ ($JAR_COUNT JARs)"
+echo "  JRE:      $JAVA_PATH"
 echo "  Plugins:  $PLUGINS_DIR/"
-echo ""
-echo "  Installed components:"
-ls -1 "$BACKEND_DIR" | sed 's/^/    - /'
 echo ""
 echo "  Downloaded plugins:"
 ls -1 "$PLUGINS_DIR" | grep ".jar$" | sed 's/^/    - /'
 echo ""
 echo "  Total size: $(du -sh "$BACKEND_DIR" | cut -f1)"
 echo ""
-echo "✨ Next steps:"
+echo "Next steps:"
 echo "  npm run build"
 echo "  npm start"
