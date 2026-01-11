@@ -83,7 +83,8 @@ else
 fi
 
 # Move extracted contents to backend directory
-mv /tmp/sonarlint-extract/*/* "$BACKEND_DIR/"
+# The tarball extracts directly to jre/ and lib/ (no parent directory)
+mv /tmp/sonarlint-extract/* "$BACKEND_DIR/"
 rm -rf "/tmp/sonarlint-extract"
 rm "/tmp/${DIST_FILE}"
 
@@ -100,9 +101,9 @@ curl -L --progress-bar -o "$PLUGINS_DIR/sonar-javascript-plugin-11.3.0.34350.jar
   "https://repo1.maven.org/maven2/org/sonarsource/javascript/sonar-javascript-plugin/11.3.0.34350/sonar-javascript-plugin-11.3.0.34350.jar"
 
 # Python Plugin
-echo "- Python 5.9.0..."
-curl -L --progress-bar -o "$PLUGINS_DIR/sonar-python-plugin-5.9.0.23806.jar" \
-  "https://repo1.maven.org/maven2/org/sonarsource/python/sonar-python-plugin/5.9.0.23806/sonar-python-plugin-5.9.0.23806.jar"
+echo "- Python 5.16.0..."
+curl -L --progress-bar -o "$PLUGINS_DIR/sonar-python-plugin-5.16.0.29940.jar" \
+  "https://repo1.maven.org/maven2/org/sonarsource/python/sonar-python-plugin/5.16.0.29940/sonar-python-plugin-5.16.0.29940.jar"
 
 # Extract eslint-bridge from JavaScript plugin
 echo ""
