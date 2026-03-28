@@ -32,7 +32,8 @@
     "release:patch": "standard-version --release-as patch"
   },
   "bin": {
-    "sonarlint-mcp": "./dist/index.js"
+    "sonarlint-mcp": "./dist/index.js",
+    "sonarlint-mcp-server": "./dist/index.js"
   },
   "files": [
     "dist",
