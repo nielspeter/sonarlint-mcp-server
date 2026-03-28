@@ -4,6 +4,7 @@ import { tmpdir } from 'os';
 import { join, relative } from 'path';
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync } from 'fs';
 import { IssueCollector } from './utils/issue-collector.js';
+import { buildClientFileDtos } from './utils/file-registration.js';
 
 interface SloopConfig {
   javaPath?: string;
@@ -627,8 +628,16 @@ export class SloopBridge extends EventEmitter {
 
     const startTime = Date.now();
 
+    // Register files in SLOOP's virtual file system before analysis
+    const fileDtos = buildClientFileDtos(filePaths, configScopeId);
+    this.sendNotification('file/didUpdateFileSystem', {
+      addedFiles: fileDtos,
+      changedFiles: [],
+      removedFiles: [],
+    });
+    console.error(`[ANALYSIS] Registered ${fileDtos.length} files in SLOOP VFS`);
+
     try {
-      // Returns AnalyzeFilesResponse with rawIssues directly
       const result = await this.sendRequest('analysis/analyzeFilesAndTrack', {
         configurationScopeId: configScopeId,  // Note: different field name than analyzeFileList!
         analysisId: analysisId,
