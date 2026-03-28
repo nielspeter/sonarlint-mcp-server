@@ -51,51 +51,56 @@ export function formatAnalysisResult(result: AnalysisResult): string {
 }
 
 /**
- * Format batch analysis result for display
+ * Format batch analysis result for display.
+ * Only shows files with issues; clean files get a single summary line.
  */
 export function formatBatchAnalysisResult(result: BatchAnalysisResult): string {
   const { files, summary } = result;
+  const cleanFiles = summary.totalFiles - summary.filesWithIssues;
 
   let output = `# Batch Analysis Results\n\n`;
-  output += `**Total Files**: ${summary.totalFiles}\n`;
+  output += `**Files Analyzed**: ${summary.totalFiles}\n`;
   output += `**Files with Issues**: ${summary.filesWithIssues}\n`;
   output += `**Total Issues**: ${summary.totalIssues}\n\n`;
 
-  // Overall severity breakdown
-  output += `## Overall Issues by Severity\n\n`;
-  if (summary.bySeverity.blocker > 0) output += `- 🔴 **BLOCKER**: ${summary.bySeverity.blocker}\n`;
-  if (summary.bySeverity.critical > 0) output += `- 🟠 **CRITICAL**: ${summary.bySeverity.critical}\n`;
-  if (summary.bySeverity.major > 0) output += `- 🟡 **MAJOR**: ${summary.bySeverity.major}\n`;
-  if (summary.bySeverity.minor > 0) output += `- 🔵 **MINOR**: ${summary.bySeverity.minor}\n`;
-  if (summary.bySeverity.info > 0) output += `- ⚪ **INFO**: ${summary.bySeverity.info}\n`;
+  if (summary.totalIssues === 0) {
+    output += `✅ ${cleanFiles} files clean — no issues found.\n`;
+    return output;
+  }
+
+  // Severity breakdown
+  const severities: [string, string, number][] = [
+    ['🔴', 'BLOCKER', summary.bySeverity.blocker],
+    ['🟠', 'CRITICAL', summary.bySeverity.critical],
+    ['🟡', 'MAJOR', summary.bySeverity.major],
+    ['🔵', 'MINOR', summary.bySeverity.minor],
+    ['⚪', 'INFO', summary.bySeverity.info],
+  ];
+  for (const [icon, label, count] of severities) {
+    if (count > 0) output += `- ${icon} **${label}**: ${count}\n`;
+  }
   output += `\n`;
 
-  // File-by-file breakdown
-  output += `## Issues by File\n\n`;
+  // Only show files with issues, sorted by issue count descending
+  const filesWithIssues = files
+    .filter(f => f.issueCount > 0)
+    .sort((a, b) => b.issueCount - a.issueCount);
 
-  for (const file of files) {
-    if (file.issueCount === 0) {
-      output += `### ✅ ${file.filePath}\n\nNo issues found.\n\n`;
-    } else {
-      output += `### ${file.filePath} (${file.issueCount} issue${file.issueCount > 1 ? 's' : ''})\n\n`;
+  for (const file of filesWithIssues) {
+    output += `### ${file.filePath} (${file.issueCount} issue${file.issueCount > 1 ? 's' : ''})\n\n`;
+    output += `| Line | Severity | Rule | Message |\n`;
+    output += `|------|----------|------|---------|\n`;
 
-      // Group by severity
-      const bySeverity: Record<string, AnalysisIssue[]> = {};
-      for (const issue of file.issues) {
-        if (!bySeverity[issue.severity]) {
-          bySeverity[issue.severity] = [];
-        }
-        bySeverity[issue.severity].push(issue);
-      }
-
-      for (const [severity, issues] of Object.entries(bySeverity)) {
-        output += `**${severity}** (${issues.length}):\n`;
-        for (const issue of issues) {
-          output += `- Line ${issue.line}: ${issue.message} [\`${issue.rule}\`]\n`;
-        }
-        output += `\n`;
-      }
+    const sorted = [...file.issues].sort((a, b) => a.line - b.line);
+    for (const issue of sorted) {
+      const qf = issue.quickFix ? ' 🔧' : '';
+      output += `| ${issue.line} | ${issue.severity} | \`${issue.rule}\` | ${issue.message}${qf} |\n`;
     }
+    output += `\n`;
+  }
+
+  if (cleanFiles > 0) {
+    output += `✅ ${cleanFiles} file${cleanFiles > 1 ? 's' : ''} clean\n`;
   }
 
   return output;

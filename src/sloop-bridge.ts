@@ -601,6 +601,15 @@ export class SloopBridge extends EventEmitter {
   }
 
   // Public API methods
+
+  /**
+   * List all standalone rule definitions from SLOOP.
+   * Returns a map of rule key -> rule definition.
+   */
+  async listAllStandaloneRulesDefinitions(): Promise<any> {
+    return this.sendRequest('rules/listAllStandaloneRulesDefinitions');
+  }
+
   addConfigurationScope(scopeId: string, params: { name?: string, parentId?: string } = {}): void {
     this.sendNotification('configuration/didAddConfigurationScopes', {
       addedScopes: [{
