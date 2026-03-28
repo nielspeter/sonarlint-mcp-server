@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import { tmpdir } from 'os';
 import { join, relative } from 'path';
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync } from 'fs';
+import { IssueCollector } from './utils/issue-collector.js';
 
 interface SloopConfig {
   javaPath?: string;
@@ -24,6 +25,7 @@ export class SloopBridge extends EventEmitter {
   private messageBuffer = '';
   private readonly config: Required<Omit<SloopConfig, 'autoInitialize'>> & Pick<SloopConfig, 'autoInitialize'>;
   private readonly projectRoot: string;
+  private readonly issueCollector = new IssueCollector();
 
   constructor(packageRoot?: string, config: SloopConfig = {}) {
     super();
@@ -218,9 +220,22 @@ export class SloopBridge extends EventEmitter {
     if (!message.id && message.method) {
       this.emit('notification', message);
 
-      // Emit specific events for well-known notifications
       if (message.method === 'log') {
         this.emit('log', message.params);
+      } else if (message.method === 'raiseIssues' && message.params) {
+        const { analysisId, issuesByFileUri } = message.params;
+        if (analysisId && issuesByFileUri) {
+          this.issueCollector.addIssues(analysisId, issuesByFileUri);
+          const count = Object.values(issuesByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
+          console.error(`[SLOOP] Received raiseIssues: ${count} issues for analysis ${analysisId}`);
+        }
+      } else if (message.method === 'raiseHotspots' && message.params) {
+        const { analysisId, hotspotsByFileUri } = message.params;
+        if (analysisId && hotspotsByFileUri) {
+          this.issueCollector.addHotspots(analysisId, hotspotsByFileUri);
+          const count = Object.values(hotspotsByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
+          console.error(`[SLOOP] Received raiseHotspots: ${count} hotspots for analysis ${analysisId}`);
+        }
       }
     }
   }
@@ -626,7 +641,16 @@ export class SloopBridge extends EventEmitter {
       console.error(`[ANALYSIS] Completed in ${elapsed}ms`);
       console.error(`[ANALYSIS] Result keys:`, Object.keys(result || {}));
 
-      return result;
+      // Collect issues delivered via raiseIssues/raiseHotspots notifications
+      const raisedIssues = this.issueCollector.getAndClear(analysisId);
+      const raisedHotspots = this.issueCollector.getHotspotsAndClear(analysisId);
+      console.error(`[ANALYSIS] Collected ${raisedIssues.length} raised issues, ${raisedHotspots.length} hotspots`);
+
+      return {
+        ...result,
+        raisedIssues,
+        raisedHotspots,
+      };
     } catch (error) {
       const elapsed = Date.now() - startTime;
       console.error(`[ANALYSIS] Failed after ${elapsed}ms:`, error);

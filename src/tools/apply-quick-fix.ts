@@ -22,7 +22,7 @@ export async function handleApplyQuickFix(args: any) {
   const bridge = await ensureSloopBridge();
   const scopeId = getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const rawIssues = rawResult.rawIssues || [];
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 
   // Find the issue at the specified line with the specified rule
   const targetIssue = rawIssues.find((issue: any) => {

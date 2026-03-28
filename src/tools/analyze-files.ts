@@ -61,7 +61,7 @@ export async function handleAnalyzeFiles(args: any) {
     console.error(`[MCP] Analyzing ${scopeFiles.length} files in scope ${scopeId}`);
 
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, scopeFiles);
-    const rawIssues = rawResult.rawIssues || [];
+    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 
     // Group issues by file
     const issuesByFile = new Map<string, any[]>();

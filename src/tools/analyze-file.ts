@@ -50,9 +50,9 @@ export async function handleAnalyzeFile(args: any) {
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
   console.error(`[MCP] analyzeFilesAndTrack returned`);
 
-  // Extract issues from raw result
-  const rawIssues = rawResult.rawIssues || [];
-  console.error(`[MCP] Found ${rawIssues.length} raw issues`);
+  // Extract issues: prefer raisedIssues (from notifications) over rawIssues (from response)
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
+  console.error(`[MCP] Found ${rawIssues.length} issues (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`);
 
   // Transform to simplified format
   let issues = transformSloopIssues(rawIssues);

@@ -57,8 +57,8 @@ export async function handleAnalyzeContent(args: any) {
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [tempFilePath]);
 
     // Extract issues from raw result
-    const rawIssues = rawResult.rawIssues || [];
-    console.error(`[MCP] Found ${rawIssues.length} raw issues in content`);
+    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
+    console.error(`[MCP] Found ${rawIssues.length} issues in content (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`);
 
     // Transform to simplified format
     const issues = transformSloopIssues(rawIssues);

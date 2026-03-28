@@ -23,7 +23,7 @@ export async function handleApplyAllQuickFixes(args: any) {
   const bridge = await ensureSloopBridge();
   const scopeId = getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const rawIssues = rawResult.rawIssues || [];
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 
   console.error(`[MCP] Found ${rawIssues.length} total issues`);
 
@@ -132,7 +132,7 @@ export async function handleApplyAllQuickFixes(args: any) {
 
   // Re-analyze to get remaining issues
   const finalResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const remainingIssues = finalResult.rawIssues || [];
+  const remainingIssues = finalResult.raisedIssues?.length ? finalResult.raisedIssues : (finalResult.rawIssues || []);
   const transformedRemaining = transformSloopIssues(remainingIssues);
 
   // Format summary
