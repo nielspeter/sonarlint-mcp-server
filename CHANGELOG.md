@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.5](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.4...v0.2.5) (2026-03-28)
+
+
+### Bug Fixes
+
+* register files in SLOOP VFS before analysis ([ca0391a](https://github.com/nielspeter/sonarlint-mcp-server/commit/ca0391a9f59a9e14a0f5f7bc7757b16bc7f87be4)), closes [#5](https://github.com/nielspeter/sonarlint-mcp-server/issues/5)
+
 ### [0.2.4](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.3...v0.2.4) (2026-03-28)
 
 
