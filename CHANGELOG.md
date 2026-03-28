@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.6](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.5...v0.2.6) (2026-03-28)
+
+
+### Bug Fixes
+
+* compact batch output and real rule catalog from SLOOP ([65ed048](https://github.com/nielspeter/sonarlint-mcp-server/commit/65ed048f4d30a6c28af98da4013c90c8c2b94110)), closes [#6](https://github.com/nielspeter/sonarlint-mcp-server/issues/6) [#7](https://github.com/nielspeter/sonarlint-mcp-server/issues/7) [#6](https://github.com/nielspeter/sonarlint-mcp-server/issues/6) [#7](https://github.com/nielspeter/sonarlint-mcp-server/issues/7)
+
 ### [0.2.5](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.4...v0.2.5) (2026-03-28)
 
 
