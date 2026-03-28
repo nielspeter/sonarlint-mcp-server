@@ -97,7 +97,10 @@ function process(data) {
 |------|-------------|
 | `analyze_file` | Analyze a single file for issues |
 | `analyze_files` | Batch analyze multiple files |
+| `analyze_project` | Analyze an entire project directory |
 | `analyze_content` | Analyze code snippets (no file needed) |
+| `apply_quick_fix` | Apply a suggested quick fix to an issue |
+| `apply_all_quick_fixes` | Apply all available quick fixes for a file |
 | `list_active_rules` | Show all active SonarLint rules |
 | `health_check` | Check server status and diagnostics |
 

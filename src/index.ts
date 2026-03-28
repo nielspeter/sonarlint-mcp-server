@@ -13,6 +13,13 @@ import { handleAnalyzeProject } from "./tools/analyze-project.js";
 import { handleApplyQuickFix } from "./tools/apply-quick-fix.js";
 import { handleApplyAllQuickFixes } from "./tools/apply-all-quick-fixes.js";
 import { getSloopBridge } from "./state.js";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 
 // Initialize the MCP server
 const server = new McpServer({
@@ -199,7 +206,7 @@ process.on('SIGTERM', shutdown);
 // Start the server
 async function main() {
   console.error("[MCP] Starting SonarLint MCP Server...");
-  console.error("[MCP] Version: 1.0.0 (Phase 3)");
+  console.error(`[MCP] Version: ${packageJson.version}`);
   console.error("[MCP] Mode: Standalone (no IDE required)");
   console.error("[MCP] Tools: analyze_file, analyze_files, analyze_content, list_active_rules");
   console.error("[MCP] Features:");
