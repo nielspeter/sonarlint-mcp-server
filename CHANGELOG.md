@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.1...v0.2.2) (2026-03-28)
+
+
+### Features
+
+* add robust extraction and validation to setup script ([efb737e](https://github.com/nielspeter/sonarlint-mcp-server/commit/efb737e4bc9bb5a74c24a5dafe7df46f05e395d9))
+
+
+### Bug Fixes
+
+* add bin entry matching package name for npx compatibility ([e4f4220](https://github.com/nielspeter/sonarlint-mcp-server/commit/e4f422029af47cdef3546a94bfc8734b6db7db7a))
+* correct tarball extraction and update Python plugin version ([c1cbe3a](https://github.com/nielspeter/sonarlint-mcp-server/commit/c1cbe3acaf05e04827c4da2ac28b51ff09357ce0))
+
+
+### Documentation
+
+* Clarify Claude Code vs Claude Desktop configuration and remove unnecessary global install option ([394f943](https://github.com/nielspeter/sonarlint-mcp-server/commit/394f9439eca6388f11034782d17b93d296802ea2))
+
 ### [0.2.1](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.0...v0.2.1) (2025-11-12)
 
 
