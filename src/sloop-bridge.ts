@@ -434,8 +434,8 @@ export class SloopBridge extends EventEmitter {
     }
 
     // Dynamic timeout based on operation type
-    // Analysis operations need more time, especially TypeScript which spawns external processes
-    const timeoutMs = method.includes('analyze') ? 60000 : 30000; // 60s for analysis, 30s for others
+    // Analysis needs longer: first run starts eslint-bridge subprocess + parses full project
+    const timeoutMs = method.includes('analyze') ? 180000 : 30000; // 180s for analysis, 30s for others
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
