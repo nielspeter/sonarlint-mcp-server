@@ -128,14 +128,14 @@ export class MCPTestClient {
    * Helper: Analyze a file
    */
   async analyzeFile(filePath: string): Promise<any> {
-    return this.callTool('analyze_file', { filePath });
+    return this.callTool('check_quality', { filePath });
   }
 
   /**
    * Helper: Apply all quick fixes
    */
   async applyAllQuickFixes(filePath: string): Promise<any> {
-    return this.callTool('apply_all_quick_fixes', { filePath });
+    return this.callTool('fix_all_issues', { filePath });
   }
 
   /**

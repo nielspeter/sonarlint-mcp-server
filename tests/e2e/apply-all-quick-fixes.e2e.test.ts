@@ -165,8 +165,8 @@ function tooManyParams(a, b, c, d, e, f, g, h) {
     expect(result.tools.length).toBeGreaterThan(0);
 
     const toolNames = result.tools.map((t: any) => t.name);
-    expect(toolNames).toContain('analyze_file');
-    expect(toolNames).toContain('apply_quick_fix');
-    expect(toolNames).toContain('apply_all_quick_fixes');
+    expect(toolNames).toContain('check_quality');
+    expect(toolNames).toContain('fix_issue');
+    expect(toolNames).toContain('fix_all_issues');
   }, 5000);
 });

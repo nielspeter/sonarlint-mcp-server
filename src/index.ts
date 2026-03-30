@@ -33,11 +33,11 @@ const server = new McpServer({
   version: packageJson.version,
 });
 
-// Register tool: analyze_file
+// Register tool: check_quality
 server.registerTool(
-  'analyze_file',
+  'check_quality',
   {
-    description: "Analyze a single file for bugs, code smells, and security vulnerabilities. Best for 1-3 files. First call may take 30-60s (starts backend + JS/TS analyzer). Subsequent calls are fast. Returns issues with line numbers, severity, and quick fixes. For many files use analyze_files or analyze_project instead.",
+    description: "Check a file for code quality issues — bugs, code smells, security vulnerabilities, and complexity problems. Like having SonarLint in your IDE. Use after writing or modifying code to catch issues early. Returns issues with exact line numbers, severity, and available quick fixes. For multiple files use check_files; for whole projects use check_project.",
     inputSchema: {
       filePath: z.string().describe("Absolute path to the file to analyze (e.g., /path/to/file.js)"),
       minSeverity: z.enum(["INFO", "MINOR", "MAJOR", "CRITICAL", "BLOCKER"]).optional().describe("Minimum severity level to include. Filters out issues below this level. Default: INFO (show all)"),
@@ -53,11 +53,11 @@ server.registerTool(
   }
 );
 
-// Register tool: analyze_files
+// Register tool: check_files
 server.registerTool(
-  'analyze_files',
+  'check_files',
   {
-    description: "Analyze multiple files in a single batch. More efficient than calling analyze_file repeatedly. Returns a compact summary: only files with issues are listed (clean files get a one-line count). Use for targeted multi-file analysis. For whole projects, prefer analyze_project.",
+    description: "Check multiple files for code quality issues in one call — bugs, code smells, security vulnerabilities. Use when reviewing or modifying several files. Output is compact: only files with issues are shown, clean files get a summary count. For a single file use check_quality; for whole projects use check_project.",
     inputSchema: {
       filePaths: stringArray.describe("Array of absolute file paths to analyze"),
       groupByFile: z.boolean().optional().default(true).describe("Group issues by file in output (default: true)"),
@@ -74,11 +74,11 @@ server.registerTool(
   }
 );
 
-// Register tool: analyze_content
+// Register tool: check_code
 server.registerTool(
-  'analyze_content',
+  'check_code',
   {
-    description: "Analyze code content directly without project-level resolution. Faster than analyze_file for large projects since it skips import/type graph analysis. Use as a fallback when file-based analysis times out, or for unsaved changes, code snippets, and generated code.",
+    description: "Check code quality of a code snippet or content you have in hand — catches bugs, code smells, security issues, and complexity problems. Use to validate code before writing it to disk, review generated code, or check code you've read into context. No file on disk needed.",
     inputSchema: {
       content: z.string().describe("The code content to analyze"),
       language: z.enum(["javascript", "typescript", "python", "java", "go", "php", "ruby"]).describe("Programming language of the content"),
@@ -94,11 +94,11 @@ server.registerTool(
   }
 );
 
-// Register tool: list_active_rules
+// Register tool: list_rules
 server.registerTool(
-  'list_active_rules',
+  'list_rules',
   {
-    description: "List all active SonarLint rules from the backend with rule ID, name, clean code attribute, and severity impacts. Use to understand what a rule ID means (e.g., S3776 = Cognitive Complexity), discover available rules, or filter by language. Starts the backend if not already running.",
+    description: "List all active code quality rules with ID, name, and severity. Use to look up what a rule means (e.g., S3776 = Cognitive Complexity), discover what issues can be detected, or see which rules apply to a language. Covers bugs, code smells, security vulnerabilities, and security hotspots.",
     inputSchema: {
       language: z.enum(["javascript", "typescript", "python", "java", "go", "php", "ruby"]).optional().describe("Filter rules by language (optional)"),
     },
@@ -112,11 +112,11 @@ server.registerTool(
   }
 );
 
-// Register tool: health_check
+// Register tool: health_check (keeping name - it's standard)
 server.registerTool(
   'health_check',
   {
-    description: "Check server health, backend status, installed plugins, and cache stats. Use to diagnose issues (e.g., backend not started, missing plugins) or verify the server is working before analysis.",
+    description: "Check if the code quality analysis backend is running and healthy. Shows installed language plugins, cache stats, and version info. Use to diagnose when analysis isn't working as expected.",
     inputSchema: {},
   },
   async () => {
@@ -128,11 +128,11 @@ server.registerTool(
   }
 );
 
-// Register tool: analyze_project
+// Register tool: check_project
 server.registerTool(
-  'analyze_project',
+  'check_project',
   {
-    description: "Scan an entire project directory for code quality issues. Recursively finds all source files and analyzes in batch. Output is compact: only files with issues are shown in table format, clean files get a single count line. Use for broad project-wide quality checks. Excludes node_modules, dist, build, .git automatically.",
+    description: "Run a full code quality scan on a project directory — finds bugs, code smells, security vulnerabilities, and complexity issues across all source files. Use for project-wide quality assessment or before a release. Output is compact: only files with issues are shown, clean files get a summary count.",
     inputSchema: {
       projectPath: z.string().describe("Absolute path to the project directory to scan"),
       maxFiles: z.number().optional().default(100).describe("Maximum number of files to analyze (default: 100, prevents overwhelming output)"),
@@ -150,11 +150,11 @@ server.registerTool(
   }
 );
 
-// Register tool: apply_quick_fix
+// Register tool: fix_issue
 server.registerTool(
-  'apply_quick_fix',
+  'fix_issue',
   {
-    description: "Apply a quick fix for one specific issue identified by file + line + rule. Modifies the file directly. To fix all issues at once, use apply_all_quick_fixes instead. Only works for issues that have SonarLint quick fixes available (indicated in analysis output).",
+    description: "Automatically fix one specific code quality issue. Applies the SonarLint-suggested fix for the issue at the given file, line, and rule. The file is modified directly. To fix all issues in a file at once, use fix_all_issues instead.",
     inputSchema: {
       filePath: z.string().describe("Absolute path to the file to fix"),
       line: z.number().describe("Line number of the issue"),
@@ -170,11 +170,11 @@ server.registerTool(
   }
 );
 
-// Register tool: apply_all_quick_fixes
+// Register tool: fix_all_issues
 server.registerTool(
-  'apply_all_quick_fixes',
+  'fix_all_issues',
   {
-    description: "Apply all available quick fixes for a file in one operation. More efficient than calling apply_quick_fix repeatedly. Returns a summary of what was fixed and what remains (issues without quick fixes need manual intervention).",
+    description: "Automatically fix all code quality issues in a file that have available quick fixes. Applies all SonarLint-suggested fixes in one operation. Returns what was fixed and what remains (some issues require manual fixes like reducing complexity).",
     inputSchema: {
       filePath: z.string().describe("Absolute path to the file to fix"),
     },
@@ -214,7 +214,7 @@ async function main() {
   console.error("[MCP] Starting SonarLint MCP Server...");
   console.error(`[MCP] Version: ${packageJson.version}`);
   console.error("[MCP] Mode: Standalone (no IDE required)");
-  console.error("[MCP] Tools: analyze_file, analyze_files, analyze_content, list_active_rules");
+  console.error("[MCP] Tools: check_quality, check_files, check_code, check_project, list_rules, fix_issue, fix_all_issues, health_check");
   console.error("[MCP] Features:");
   console.error("[MCP]   - Session storage for multi-turn conversations");
   console.error("[MCP]   - Batch analysis for multiple files");

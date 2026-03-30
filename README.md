@@ -95,13 +95,13 @@ function process(data) {
 
 | Tool | Description |
 |------|-------------|
-| `analyze_file` | Analyze a single file for issues |
-| `analyze_files` | Batch analyze multiple files |
-| `analyze_project` | Analyze an entire project directory |
-| `analyze_content` | Analyze code snippets (no file needed) |
-| `apply_quick_fix` | Apply a suggested quick fix to an issue |
-| `apply_all_quick_fixes` | Apply all available quick fixes for a file |
-| `list_active_rules` | Show all active SonarLint rules |
+| `check_quality` | Check a file for code quality issues |
+| `check_files` | Check multiple files in one call |
+| `check_project` | Run a full project-wide quality scan |
+| `check_code` | Check a code snippet (no file on disk needed) |
+| `fix_issue` | Automatically fix one specific issue |
+| `fix_all_issues` | Automatically fix all fixable issues in a file |
+| `list_rules` | List all active code quality rules |
 | `health_check` | Check server status and diagnostics |
 
 ## Example Analysis Output
