@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.4.0...v0.4.1) (2026-03-30)
+
+
+### Features
+
+* add basePath parameter for relative paths and globs in check_files ([3fbc1ff](https://github.com/nielspeter/sonarlint-mcp-server/commit/3fbc1ff2737c12b174818bc9ba31cd38c79ba695))
+
+
+### Bug Fixes
+
+* resolve 15 sonarlint issues across codebase ([be91de6](https://github.com/nielspeter/sonarlint-mcp-server/commit/be91de6d3da6b7c38e2a7720e5285f57137f3d81))
+
+
+### Code Refactoring
+
+* reduce cognitive complexity to zero sonarlint issues ([213aad6](https://github.com/nielspeter/sonarlint-mcp-server/commit/213aad634427b302c31d23ab2f9dbaa7ebe1f138))
+
 ## [0.4.0](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.3.1...v0.4.0) (2026-03-30)
 
 
