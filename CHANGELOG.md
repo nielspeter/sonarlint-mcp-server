@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.7](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.6...v0.2.7) (2026-03-30)
+
+
+### Bug Fixes
+
+* increase analysis timeout from 60s to 180s ([e358de4](https://github.com/nielspeter/sonarlint-mcp-server/commit/e358de4d5d8aee00bcbc5a7d611a5f72615fa24e))
+
 ### [0.2.6](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.5...v0.2.6) (2026-03-28)
 
 
