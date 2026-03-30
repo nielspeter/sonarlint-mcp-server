@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.8...v0.3.0) (2026-03-30)
+
+
+### Code Refactoring
+
+* rename tools for clarity and improve descriptions ([c601bcb](https://github.com/nielspeter/sonarlint-mcp-server/commit/c601bcbc7ff0272f433277bdc1e2f8801737d2d5))
+
 ### [0.2.8](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.7...v0.2.8) (2026-03-30)
 
 
