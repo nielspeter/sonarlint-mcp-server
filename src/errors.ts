@@ -34,7 +34,10 @@ export function handleToolError(error: unknown) {
     };
   }
 
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  let errorMessage: string;
+  if (error instanceof Error) errorMessage = error.message;
+  else if (typeof error === 'string') errorMessage = error;
+  else errorMessage = JSON.stringify(error);
 
   return {
     content: [

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../src/state.js', () => ({
   sessionResults: new Map(),
   batchResults: new Map(),
-  sloopBridge: null,
+  getSloopBridge: vi.fn(() => null),
   serverStartTime: Date.now(),
 }));
 
@@ -45,7 +45,7 @@ describe('health_check tool', () => {
     it('should show "running" when SLOOP bridge is initialized', async () => {
       // Simulate SLOOP being started
       const fakeBridge = {} as any;
-      vi.spyOn(state, 'sloopBridge', 'get').mockReturnValue(fakeBridge);
+      vi.mocked(state.getSloopBridge).mockReturnValue(fakeBridge);
 
       const result = await handleHealthCheck();
       const text = result.content[0].text;

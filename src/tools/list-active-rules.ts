@@ -3,7 +3,8 @@ import { ensureSloopBridge } from "../utils/sloop.js";
 export async function handleListActiveRules(args: any) {
   const { language } = args as { language?: string };
 
-  console.error(`[MCP] Listing active rules${language ? ` for ${language}` : ''}`);
+  const langSuffix = language ? ` for ${language}` : '';
+  console.error(`[MCP] Listing active rules${langSuffix}`);
 
   const bridge = await ensureSloopBridge();
 
@@ -33,7 +34,7 @@ export async function handleListActiveRules(args: any) {
     let totalRules = 0;
 
     // Sort languages alphabetically
-    const sortedLangs = [...rulesByLanguage.keys()].sort();
+    const sortedLangs = [...rulesByLanguage.keys()].sort((a, b) => a.localeCompare(b));
 
     for (const lang of sortedLangs) {
       const rules = rulesByLanguage.get(lang)!;

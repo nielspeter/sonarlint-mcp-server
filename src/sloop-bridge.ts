@@ -146,7 +146,7 @@ export class SloopBridge extends EventEmitter {
   }
 
   private setupMessageHandlers(): void {
-    if (!this.process || !this.process.stdout) return;
+    if (!this.process?.stdout) return;
 
     this.process.stdout.on('data', (data: Buffer) => {
       this.messageBuffer += data.toString();
@@ -164,11 +164,11 @@ export class SloopBridge extends EventEmitter {
   private processMessages(): void {
     while (true) {
       // Look for Content-Length header
-      const headerMatch = this.messageBuffer.match(/Content-Length: (\d+)\r?\n\r?\n/);
+      const headerMatch = /Content-Length: (\d+)\r?\n\r?\n/.exec(this.messageBuffer);
       if (!headerMatch) break;
 
       const contentLength = parseInt(headerMatch[1]);
-      const headerEnd = headerMatch.index! + headerMatch[0].length;
+      const headerEnd = headerMatch.index + headerMatch[0].length;
       const messageEnd = headerEnd + contentLength;
 
       if (this.messageBuffer.length < messageEnd) break; // Not enough data yet
@@ -498,8 +498,8 @@ export class SloopBridge extends EventEmitter {
     if (this.process) {
       try {
         await this.sendRequest('shutdown');
-      } catch (err) {
-        // Ignore shutdown errors
+      } catch {
+        console.error('[SLOOP] Shutdown request failed (process may already be exiting)');
       }
       this.process.kill();
       this.process = null;

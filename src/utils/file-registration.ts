@@ -41,7 +41,7 @@ export function buildClientFileDtos(
       fsPath: filePath,
       ideRelativePath: relative(baseDir, filePath),
       configScopeId,
-      isTest: /test[s]?[/\\]/.test(filePath),
+      isTest: /tests?[/\\]/.test(filePath),
       charset: 'UTF-8',
       content,
       detectedLanguage: sloopLanguage,

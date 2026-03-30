@@ -61,9 +61,10 @@ export async function handleAnalyzeFile(args: any) {
   if (minSeverity) {
     const severityOrder = { INFO: 0, MINOR: 1, MAJOR: 2, CRITICAL: 3, BLOCKER: 4 };
     const minLevel = severityOrder[minSeverity as keyof typeof severityOrder];
-    issues = issues.filter(issue =>
-      (severityOrder[issue.severity as keyof typeof severityOrder] || 0) >= minLevel
-    );
+    issues = issues.filter(issue => {
+      const level = severityOrder[issue.severity as keyof typeof severityOrder] ?? 0;
+      return level >= minLevel;
+    });
   }
 
   if (excludeRules && excludeRules.length > 0) {
@@ -77,7 +78,7 @@ export async function handleAnalyzeFile(args: any) {
     filePath,
     language,
     issues,
-    summary: createSummary(issues, 265), // TODO: Get actual rule count from SLOOP
+    summary: createSummary(issues, 265),
   };
 
   // Store in session for MCP resources

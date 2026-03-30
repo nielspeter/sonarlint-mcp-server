@@ -2,7 +2,7 @@
  * Output formatting utilities
  */
 
-import type { AnalysisResult, BatchAnalysisResult, AnalysisIssue } from "../types.js";
+import type { AnalysisResult, BatchAnalysisResult } from "../types.js";
 
 /**
  * Format analysis result for display

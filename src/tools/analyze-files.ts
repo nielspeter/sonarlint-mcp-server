@@ -54,7 +54,7 @@ export async function handleAnalyzeFiles(args: any) {
   if (filePaths.length === 0) {
     throw new SloopError(
       "No files matched",
-      `No files matched the provided patterns:\n${rawPaths.map(p => `- ${p}`).join('\n')}`,
+      "No files matched the provided patterns:\n" + rawPaths.map(p => `- ${p}`).join('\n'),
       false
     );
   }
@@ -64,7 +64,7 @@ export async function handleAnalyzeFiles(args: any) {
   if (missingFiles.length > 0) {
     throw new SloopError(
       `Files not found: ${missingFiles.join(', ')}`,
-      `The following files do not exist:\n${missingFiles.map(f => `- ${f}`).join('\n')}`,
+      "The following files do not exist:\n" + missingFiles.map(f => `- ${f}`).join('\n'),
       false
     );
   }
@@ -119,9 +119,10 @@ export async function handleAnalyzeFiles(args: any) {
       if (minSeverity) {
         const severityOrder = { INFO: 0, MINOR: 1, MAJOR: 2, CRITICAL: 3, BLOCKER: 4 };
         const minLevel = severityOrder[minSeverity as keyof typeof severityOrder];
-        transformedIssues = transformedIssues.filter(issue =>
-          (severityOrder[issue.severity as keyof typeof severityOrder] || 0) >= minLevel
-        );
+        transformedIssues = transformedIssues.filter(issue => {
+          const level = severityOrder[issue.severity as keyof typeof severityOrder] ?? 0;
+          return level >= minLevel;
+        });
       }
 
       if (excludeRules && excludeRules.length > 0) {

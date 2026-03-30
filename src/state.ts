@@ -5,8 +5,8 @@
 import { SloopBridge } from "./sloop-bridge.js";
 import type { AnalysisResult, BatchAnalysisResult } from "./types.js";
 
-// Global SLOOP bridge instance (lazy initialized)
-export let sloopBridge: SloopBridge | null = null;
+// Global SLOOP bridge instance (lazy initialized, accessed via getter/setter)
+let sloopBridge: SloopBridge | null = null;
 
 // Project root -> scopeId mapping
 export const scopeMap = new Map<string, string>();
