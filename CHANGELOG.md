@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.8](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.7...v0.2.8) (2026-03-30)
+
+
+### Bug Fixes
+
+* improve tool descriptions and accept string arrays ([e113cd8](https://github.com/nielspeter/sonarlint-mcp-server/commit/e113cd8d559a07e3982b050b6302923e3ab581e7))
+
 ### [0.2.7](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.2.6...v0.2.7) (2026-03-30)
 
 
