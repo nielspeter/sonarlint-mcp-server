@@ -4,6 +4,7 @@ import { SloopError } from "../errors.js";
 import { ensureSloopBridge } from "../utils/sloop.js";
 import { getOrCreateScope } from "../utils/scope.js";
 import { detectLanguage } from "../utils/language.js";
+import { filterBySeverity } from "../utils/quick-fix.js";
 import { transformSloopIssues, createSummary } from "../utils/transforms.js";
 import { formatAnalysisResult } from "../utils/formatting.js";
 import { sessionResults } from "../state.js";
@@ -57,14 +58,8 @@ export async function handleAnalyzeFile(args: any) {
   // Transform to simplified format
   let issues = transformSloopIssues(rawIssues);
 
-  // Apply filtering if requested
   if (minSeverity) {
-    const severityOrder = { INFO: 0, MINOR: 1, MAJOR: 2, CRITICAL: 3, BLOCKER: 4 };
-    const minLevel = severityOrder[minSeverity as keyof typeof severityOrder];
-    issues = issues.filter(issue => {
-      const level = severityOrder[issue.severity as keyof typeof severityOrder] ?? 0;
-      return level >= minLevel;
-    });
+    issues = filterBySeverity(issues, minSeverity);
   }
 
   if (excludeRules && excludeRules.length > 0) {

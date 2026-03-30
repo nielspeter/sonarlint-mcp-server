@@ -192,61 +192,74 @@ export class SloopBridge extends EventEmitter {
       console.error(`[DEBUG ${timestamp}] Received message:`, JSON.stringify(message, null, 2).substring(0, 1000));
     }
 
-    // Handle requests FROM SLOOP (client RPC methods) - check method field FIRST
     // Requests have both id AND method, responses have id but no method
     if (message.id && message.method) {
       this.handleClientRequest(message);
-      return;
+    } else if (message.id && !message.method) {
+      this.handleResponse(message);
+    } else if (!message.id && message.method) {
+      this.handleNotification(message);
     }
+  }
 
-    // Handle responses to our requests (has id but no method)
-    if (message.id && !message.method) {
-      if (this.pendingRequests.has(message.id)) {
-        const pending = this.pendingRequests.get(message.id)!;
-        clearTimeout(pending.timeout);
-        this.pendingRequests.delete(message.id);
+  private handleResponse(message: any): void {
+    if (!this.pendingRequests.has(message.id)) return;
 
-        if (message.error) {
-          // Log full error for debugging
-          console.error('Full RPC Error:', JSON.stringify(message.error, null, 2).substring(0, 2000));
-          pending.reject(new Error(message.error.message || 'RPC Error'));
-        } else {
-          console.error('[DEBUG] Resolving request', message.id, 'with result');
-          pending.resolve(message.result);
-        }
-      }
-      return;
+    const pending = this.pendingRequests.get(message.id)!;
+    clearTimeout(pending.timeout);
+    this.pendingRequests.delete(message.id);
+
+    if (message.error) {
+      console.error('Full RPC Error:', JSON.stringify(message.error, null, 2).substring(0, 2000));
+      pending.reject(new Error(message.error.message || 'RPC Error'));
+    } else {
+      console.error('[DEBUG] Resolving request', message.id, 'with result');
+      pending.resolve(message.result);
     }
+  }
 
-    // Handle notifications from SLOOP (no id, has method)
-    if (!message.id && message.method) {
-      this.emit('notification', message);
+  private handleNotification(message: any): void {
+    this.emit('notification', message);
+    const { method, params } = message;
 
-      if (message.method === 'log') {
-        this.emit('log', message.params);
-      } else if (message.method === 'raiseIssues' && message.params) {
-        const { analysisId, issuesByFileUri } = message.params;
-        if (analysisId && issuesByFileUri) {
-          this.issueCollector.addIssues(analysisId, issuesByFileUri);
-          const count = Object.values(issuesByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
-          console.error(`[SLOOP] Received raiseIssues: ${count} issues for analysis ${analysisId}`);
-        }
-      } else if (message.method === 'raiseHotspots' && message.params) {
-        const { analysisId, hotspotsByFileUri } = message.params;
-        if (analysisId && hotspotsByFileUri) {
-          this.issueCollector.addHotspots(analysisId, hotspotsByFileUri);
-          const count = Object.values(hotspotsByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
-          console.error(`[SLOOP] Received raiseHotspots: ${count} hotspots for analysis ${analysisId}`);
-        }
-      } else if (message.method === 'didChangeAnalysisReadiness' && message.params) {
-        const { configurationScopeIds, areReadyForAnalysis } = message.params;
-        console.error(`[SLOOP] Analysis readiness changed: scopes=${configurationScopeIds}, ready=${areReadyForAnalysis}`);
-        if (areReadyForAnalysis) {
-          for (const scopeId of configurationScopeIds) {
-            this.emit('scopeReady', scopeId);
-          }
-        }
-      }
+    switch (method) {
+      case 'log':
+        this.emit('log', params);
+        break;
+      case 'raiseIssues':
+        this.onRaiseIssues(params);
+        break;
+      case 'raiseHotspots':
+        this.onRaiseHotspots(params);
+        break;
+      case 'didChangeAnalysisReadiness':
+        this.onAnalysisReadiness(params);
+        break;
+    }
+  }
+
+  private onRaiseIssues(params: any): void {
+    const { analysisId, issuesByFileUri } = params ?? {};
+    if (!analysisId || !issuesByFileUri) return;
+    this.issueCollector.addIssues(analysisId, issuesByFileUri);
+    const count = Object.values(issuesByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
+    console.error(`[SLOOP] Received raiseIssues: ${count} issues for analysis ${analysisId}`);
+  }
+
+  private onRaiseHotspots(params: any): void {
+    const { analysisId, hotspotsByFileUri } = params ?? {};
+    if (!analysisId || !hotspotsByFileUri) return;
+    this.issueCollector.addHotspots(analysisId, hotspotsByFileUri);
+    const count = Object.values(hotspotsByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
+    console.error(`[SLOOP] Received raiseHotspots: ${count} hotspots for analysis ${analysisId}`);
+  }
+
+  private onAnalysisReadiness(params: any): void {
+    const { configurationScopeIds, areReadyForAnalysis } = params ?? {};
+    console.error(`[SLOOP] Analysis readiness changed: scopes=${configurationScopeIds}, ready=${areReadyForAnalysis}`);
+    if (!areReadyForAnalysis) return;
+    for (const scopeId of configurationScopeIds) {
+      this.emit('scopeReady', scopeId);
     }
   }
 

@@ -11,6 +11,7 @@ import { getOrCreateScope } from "../utils/scope.js";
 import { detectLanguage } from "../utils/language.js";
 import { transformSloopIssues } from "../utils/transforms.js";
 import { formatBatchAnalysisResult } from "../utils/formatting.js";
+import { filterBySeverity } from "../utils/quick-fix.js";
 import { batchResults } from "../state.js";
 import type { AnalysisIssue, BatchAnalysisResult } from "../types.js";
 
@@ -32,6 +33,66 @@ function expandGlobs(paths: string[]): string[] {
   return [...new Set(result)];
 }
 
+interface FileResult {
+  filePath: string;
+  language: string;
+  issueCount: number;
+  issues: AnalysisIssue[];
+}
+
+function resolveAndValidatePaths(rawPaths: string[]): string[] {
+  const filePaths = expandGlobs(rawPaths);
+
+  if (filePaths.length === 0) {
+    throw new SloopError(
+      "No files matched",
+      "No files matched the provided patterns:\n" + rawPaths.map(p => `- ${p}`).join('\n'),
+      false
+    );
+  }
+
+  const missingFiles = filePaths.filter(fp => !existsSync(fp));
+  if (missingFiles.length > 0) {
+    throw new SloopError(
+      `Files not found: ${missingFiles.join(', ')}`,
+      "The following files do not exist:\n" + missingFiles.map(f => `- ${f}`).join('\n'),
+      false
+    );
+  }
+
+  return filePaths;
+}
+
+async function groupByScope(filePaths: string[]): Promise<Map<string, string[]>> {
+  const filesByScope = new Map<string, string[]>();
+  for (const filePath of filePaths) {
+    const scopeId = await getOrCreateScope(filePath, filePaths);
+    if (!filesByScope.has(scopeId)) {
+      filesByScope.set(scopeId, []);
+    }
+    filesByScope.get(scopeId)!.push(filePath);
+  }
+  return filesByScope;
+}
+
+function buildSummary(allResults: FileResult[]): BatchAnalysisResult['summary'] {
+  const bySeverity = { blocker: 0, critical: 0, major: 0, minor: 0, info: 0 };
+
+  for (const result of allResults) {
+    for (const issue of result.issues) {
+      const key = issue.severity.toLowerCase() as keyof typeof bySeverity;
+      if (key in bySeverity) bySeverity[key]++;
+    }
+  }
+
+  return {
+    totalFiles: allResults.length,
+    totalIssues: allResults.reduce((sum, r) => sum + r.issueCount, 0),
+    filesWithIssues: allResults.filter(r => r.issueCount > 0).length,
+    bySeverity,
+  };
+}
+
 export async function handleAnalyzeFiles(args: any) {
   const { filePaths: rawPaths, minSeverity, excludeRules } = args as {
     filePaths: string[];
@@ -48,50 +109,12 @@ export async function handleAnalyzeFiles(args: any) {
     );
   }
 
-  // Expand any glob patterns (e.g. "src/**/*.ts") into concrete file paths
-  const filePaths = expandGlobs(rawPaths);
-
-  if (filePaths.length === 0) {
-    throw new SloopError(
-      "No files matched",
-      "No files matched the provided patterns:\n" + rawPaths.map(p => `- ${p}`).join('\n'),
-      false
-    );
-  }
-
-  // Validate all resolved files exist
-  const missingFiles = filePaths.filter(fp => !existsSync(fp));
-  if (missingFiles.length > 0) {
-    throw new SloopError(
-      `Files not found: ${missingFiles.join(', ')}`,
-      "The following files do not exist:\n" + missingFiles.map(f => `- ${f}`).join('\n'),
-      false
-    );
-  }
-
+  const filePaths = resolveAndValidatePaths(rawPaths);
   console.error(`[MCP] Batch analyzing ${filePaths.length} files...`);
 
-  // Ensure SLOOP is initialized
   const bridge = await ensureSloopBridge();
-
-  // Group files by project root for scope management
-  // Pass all files to getOrCreateScope so they're pre-registered for listFiles
-  const filesByScope = new Map<string, string[]>();
-  for (const filePath of filePaths) {
-    const scopeId = await getOrCreateScope(filePath, filePaths);
-    if (!filesByScope.has(scopeId)) {
-      filesByScope.set(scopeId, []);
-    }
-    filesByScope.get(scopeId)!.push(filePath);
-  }
-
-  // Analyze each scope
-  const allResults: Array<{
-    filePath: string;
-    language: string;
-    issueCount: number;
-    issues: AnalysisIssue[];
-  }> = [];
+  const filesByScope = await groupByScope(filePaths);
+  const allResults: FileResult[] = [];
 
   for (const [scopeId, scopeFiles] of filesByScope) {
     console.error(`[MCP] Analyzing ${scopeFiles.length} files in scope ${scopeId}`);
@@ -99,87 +122,26 @@ export async function handleAnalyzeFiles(args: any) {
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, scopeFiles);
     const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 
-    // Group issues by file
     const issuesByFile = new Map<string, any[]>();
     for (const issue of rawIssues) {
-      const fileUri = issue.fileUri;
-      if (!issuesByFile.has(fileUri)) {
-        issuesByFile.set(fileUri, []);
-      }
-      issuesByFile.get(fileUri)!.push(issue);
+      const arr = issuesByFile.get(issue.fileUri) || [];
+      arr.push(issue);
+      issuesByFile.set(issue.fileUri, arr);
     }
 
-    // Create results for each file
     for (const filePath of scopeFiles) {
-      const fileUri = `file://${filePath}`;
-      const fileIssues = issuesByFile.get(fileUri) || [];
-      let transformedIssues = transformSloopIssues(fileIssues);
+      let issues = transformSloopIssues(issuesByFile.get(`file://${filePath}`) || []);
+      if (minSeverity) issues = filterBySeverity(issues, minSeverity);
+      if (excludeRules?.length) issues = issues.filter(i => !excludeRules.includes(i.rule));
 
-      // Apply filtering if requested
-      if (minSeverity) {
-        const severityOrder = { INFO: 0, MINOR: 1, MAJOR: 2, CRITICAL: 3, BLOCKER: 4 };
-        const minLevel = severityOrder[minSeverity as keyof typeof severityOrder];
-        transformedIssues = transformedIssues.filter(issue => {
-          const level = severityOrder[issue.severity as keyof typeof severityOrder] ?? 0;
-          return level >= minLevel;
-        });
-      }
-
-      if (excludeRules && excludeRules.length > 0) {
-        transformedIssues = transformedIssues.filter(issue =>
-          !excludeRules.includes(issue.rule)
-        );
-      }
-
-      allResults.push({
-        filePath,
-        language: detectLanguage(filePath),
-        issueCount: transformedIssues.length,
-        issues: transformedIssues,
-      });
+      allResults.push({ filePath, language: detectLanguage(filePath), issueCount: issues.length, issues });
     }
   }
 
-  // Calculate overall summary
-  const overallSummary = {
-    totalFiles: allResults.length,
-    totalIssues: allResults.reduce((sum, r) => sum + r.issueCount, 0),
-    filesWithIssues: allResults.filter(r => r.issueCount > 0).length,
-    bySeverity: {
-      blocker: 0,
-      critical: 0,
-      major: 0,
-      minor: 0,
-      info: 0,
-    },
-  };
-
-  for (const result of allResults) {
-    for (const issue of result.issues) {
-      const severity = issue.severity.toLowerCase() as keyof typeof overallSummary.bySeverity;
-      if (severity in overallSummary.bySeverity) {
-        overallSummary.bySeverity[severity]++;
-      }
-    }
-  }
-
-  const batchResult: BatchAnalysisResult = {
-    files: allResults,
-    summary: overallSummary,
-  };
-
-  // Store in batch results for MCP resources
-  const batchId = `batch-${Date.now()}`;
-  batchResults.set(batchId, batchResult);
-
-  const formattedResult = formatBatchAnalysisResult(batchResult);
+  const batchResult: BatchAnalysisResult = { files: allResults, summary: buildSummary(allResults) };
+  batchResults.set(`batch-${Date.now()}`, batchResult);
 
   return {
-    content: [
-      {
-        type: "text" as const,
-        text: formattedResult,
-      },
-    ],
+    content: [{ type: "text" as const, text: formatBatchAnalysisResult(batchResult) }],
   };
 }

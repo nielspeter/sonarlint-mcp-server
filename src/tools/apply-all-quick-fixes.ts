@@ -4,13 +4,75 @@ import { ensureSloopBridge } from "../utils/sloop.js";
 import { getOrCreateScope } from "../utils/scope.js";
 import { notifyFileSystemChanged } from "../utils/filesystem.js";
 import { transformSloopIssues } from "../utils/transforms.js";
+import { applyTextEdits } from "../utils/quick-fix.js";
+
+interface FixResult { line: number; rule: string; message: string }
+interface FixFailure { line: number; rule: string; error: string }
+
+function applyFixesToFile(filePath: string, issues: any[]): { applied: FixResult[]; failed: FixFailure[] } {
+  const applied: FixResult[] = [];
+  const failed: FixFailure[] = [];
+
+  // Sort descending by line to avoid line number shifts
+  const sorted = [...issues].sort((a, b) => {
+    return (b.textRange?.startLine || b.startLine || 0) - (a.textRange?.startLine || a.startLine || 0);
+  });
+
+  for (const issue of sorted) {
+    const line = issue.textRange?.startLine || issue.startLine || 0;
+    const rule = issue.ruleKey;
+    const quickFix = issue.quickFixes[0];
+
+    try {
+      const lines = readFileSync(filePath, 'utf-8').split('\n');
+      applyTextEdits(lines, quickFix);
+      writeFileSync(filePath, lines.join('\n'), 'utf-8');
+      applied.push({ line, rule, message: quickFix.message || 'Applied automated fix' });
+    } catch (error) {
+      failed.push({ line, rule, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  return { applied, failed };
+}
+
+function formatFixList(label: string, items: Array<{ line: number; rule: string; message?: string; error?: string }>): string {
+  if (items.length === 0) return '';
+  const lines = items.map(i => `- Line ${i.line}: ${i.rule} - ${i.message || i.error}`);
+  return `**${label}:**\n${lines.join('\n')}\n\n`;
+}
+
+function formatRemainingIssues(remaining: ReturnType<typeof transformSloopIssues>): string {
+  if (remaining.length === 0) return `🎉 All issues resolved! The file has no remaining code quality issues.\n`;
+
+  let out = `**Remaining Issues (require manual fixing):**\n`;
+  for (const severity of ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO']) {
+    const issues = remaining.filter(i => i.severity === severity);
+    if (issues.length === 0) continue;
+    out += `\n${severity} (${issues.length}):\n`;
+    for (const issue of issues) out += `- Line ${issue.line}: ${issue.rule} - ${issue.message}\n`;
+  }
+  return out;
+}
+
+function formatSummary(
+  filePath: string,
+  applied: FixResult[],
+  failed: FixFailure[],
+  remaining: ReturnType<typeof transformSloopIssues>,
+): string {
+  let summary = `✅ **Quick fixes applied**\n\nFile: ${filePath}\nApplied: ${applied.length} fixes\n`;
+  if (failed.length > 0) summary += `Failed: ${failed.length} fixes\n`;
+  summary += `Remaining issues: ${remaining.length}\n\n`;
+  summary += formatFixList('Fixed Issues', applied);
+  summary += formatFixList('Failed Fixes', failed);
+  summary += formatRemainingIssues(remaining);
+  return summary;
+}
 
 export async function handleApplyAllQuickFixes(args: any) {
   const { filePath } = args as { filePath: string };
 
-  console.error(`[MCP] Applying all quick fixes for ${filePath}`);
-
-  // Validate file exists
   if (!existsSync(filePath)) {
     throw new SloopError(
       `File not found: ${filePath}`,
@@ -19,174 +81,35 @@ export async function handleApplyAllQuickFixes(args: any) {
     );
   }
 
-  // Analyze the file to get all issues with quick fixes
   const bridge = await ensureSloopBridge();
   const scopeId = await getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
   const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 
-  console.error(`[MCP] Found ${rawIssues.length} total issues`);
+  const fixableIssues = rawIssues.filter((issue: any) => issue.quickFixes?.length > 0);
 
-  // Filter issues that have quick fixes
-  const issuesWithQuickFixes = rawIssues.filter((issue: any) => {
-    const hasQuickFixes = issue.quickFixes && issue.quickFixes.length > 0;
-    if (hasQuickFixes) {
-      console.error(`[DEBUG] Issue at line ${issue.textRange?.startLine || issue.startLine}: ${issue.ruleKey} has ${issue.quickFixes.length} quick fixes`);
-    }
-    return hasQuickFixes;
-  });
-
-  console.error(`[MCP] Found ${issuesWithQuickFixes.length} issues with quick fixes`);
-
-  if (issuesWithQuickFixes.length === 0) {
+  if (fixableIssues.length === 0) {
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: `ℹ️ **No quick fixes available**\n\nFile: ${filePath}\nTotal issues: ${rawIssues.length}\n\nNone of the issues in this file have automated quick fixes available. All issues must be fixed manually.`,
-        },
-      ],
+      content: [{
+        type: "text" as const,
+        text: `ℹ️ **No quick fixes available**\n\nFile: ${filePath}\nTotal issues: ${rawIssues.length}\n\nNone of the issues in this file have automated quick fixes available. All issues must be fixed manually.`,
+      }],
     };
   }
 
-  // Sort issues by line number (descending) to avoid line number shifts
-  const sortedIssues = [...issuesWithQuickFixes].sort((a, b) => {
-    const aLine = a.textRange?.startLine || a.startLine || 0;
-    const bLine = b.textRange?.startLine || b.startLine || 0;
-    return bLine - aLine; // Descending order
-  });
+  const { applied, failed } = applyFixesToFile(filePath, fixableIssues);
 
-  // Apply each quick fix
-  const appliedFixes: Array<{ line: number; rule: string; message: string }> = [];
-  const failedFixes: Array<{ line: number; rule: string; error: string }> = [];
-
-  for (const issue of sortedIssues) {
-    const line = issue.textRange?.startLine || issue.startLine || 0;
-    const rule = issue.ruleKey;
-    const quickFix = issue.quickFixes[0]; // Use first available quick fix
-
-    console.error(`[MCP] Applying fix for ${rule} at line ${line}`);
-
-    try {
-      // Read current file content
-      let fileContent = readFileSync(filePath, 'utf-8');
-      const lines = fileContent.split('\n');
-
-      // Apply the quick fix edits
-      const fileEdits = quickFix.inputFileEdits || quickFix.fileEdits || [];
-      if (fileEdits.length > 0) {
-        for (const fileEdit of fileEdits) {
-          if (fileEdit.textEdits) {
-            // Sort edits in reverse order to maintain line numbers
-            const sortedEdits = [...fileEdit.textEdits].sort((a, b) => {
-              const aStart = a.range?.startLine || 0;
-              const bStart = b.range?.startLine || 0;
-              return bStart - aStart;
-            });
-
-            for (const edit of sortedEdits) {
-              const startLine = (edit.range?.startLine || 1) - 1;
-              const startCol = edit.range?.startLineOffset || 0;
-              const endLine = (edit.range?.endLine || startLine + 1) - 1;
-              const endCol = edit.range?.endLineOffset || lines[endLine]?.length || 0;
-              const newText = edit.newText || '';
-
-              if (startLine === endLine) {
-                const currentLine = lines[startLine];
-                lines[startLine] = currentLine.substring(0, startCol) + newText + currentLine.substring(endCol);
-              } else {
-                const firstLine = lines[startLine].substring(0, startCol) + newText;
-                const lastLine = lines[endLine].substring(endCol);
-                lines.splice(startLine, endLine - startLine + 1, firstLine + lastLine);
-              }
-            }
-          }
-        }
-      }
-
-      // Write back to file
-      fileContent = lines.join('\n');
-      writeFileSync(filePath, fileContent, 'utf-8');
-
-      appliedFixes.push({
-        line,
-        rule,
-        message: quickFix.message || 'Applied automated fix',
-      });
-
-      console.error(`[MCP] Successfully applied fix for ${rule} at line ${line}`);
-    } catch (error) {
-      console.error(`[MCP] Failed to apply fix for ${rule} at line ${line}:`, error);
-      failedFixes.push({
-        line,
-        rule,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  // Notify SLOOP about file changes
-  console.error(`[Cache] Sending file system update notification...`);
   await notifyFileSystemChanged(filePath, scopeId);
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Re-analyze to get remaining issues
   const finalResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const remainingIssues = finalResult.raisedIssues?.length ? finalResult.raisedIssues : (finalResult.rawIssues || []);
-  const transformedRemaining = transformSloopIssues(remainingIssues);
-
-  // Format summary
-  let summary = `✅ **Quick fixes applied**\n\n`;
-  summary += `File: ${filePath}\n`;
-  summary += `Applied: ${appliedFixes.length} fixes\n`;
-  if (failedFixes.length > 0) {
-    summary += `Failed: ${failedFixes.length} fixes\n`;
-  }
-  summary += `Remaining issues: ${remainingIssues.length}\n\n`;
-
-  if (appliedFixes.length > 0) {
-    summary += `**Fixed Issues:**\n`;
-    for (const fix of appliedFixes) {
-      summary += `- Line ${fix.line}: ${fix.rule} - ${fix.message}\n`;
-    }
-    summary += `\n`;
-  }
-
-  if (failedFixes.length > 0) {
-    summary += `**Failed Fixes:**\n`;
-    for (const fail of failedFixes) {
-      summary += `- Line ${fail.line}: ${fail.rule} - ${fail.error}\n`;
-    }
-    summary += `\n`;
-  }
-
-  if (remainingIssues.length > 0) {
-    summary += `**Remaining Issues (require manual fixing):**\n`;
-    const groupedBySeverity = transformedRemaining.reduce((acc, issue) => {
-      if (!acc[issue.severity]) acc[issue.severity] = [];
-      acc[issue.severity].push(issue);
-      return acc;
-    }, {} as Record<string, typeof transformedRemaining>);
-
-    for (const severity of ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO']) {
-      const issues = groupedBySeverity[severity] || [];
-      if (issues.length > 0) {
-        summary += `\n${severity} (${issues.length}):\n`;
-        for (const issue of issues) {
-          summary += `- Line ${issue.line}: ${issue.rule} - ${issue.message}\n`;
-        }
-      }
-    }
-  } else {
-    summary += `🎉 All issues resolved! The file has no remaining code quality issues.\n`;
-  }
+  const remainingRaw = finalResult.raisedIssues?.length ? finalResult.raisedIssues : (finalResult.rawIssues || []);
+  const remaining = transformSloopIssues(remainingRaw);
 
   return {
-    content: [
-      {
-        type: "text" as const,
-        text: summary,
-      },
-    ],
+    content: [{
+      type: "text" as const,
+      text: formatSummary(filePath, applied, failed, remaining),
+    }],
   };
 }
