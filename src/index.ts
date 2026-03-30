@@ -15,7 +15,6 @@ import { handleAnalyzeFiles } from "./tools/analyze-files.js";
 import { handleAnalyzeContent } from "./tools/analyze-content.js";
 import { handleListActiveRules } from "./tools/list-active-rules.js";
 import { handleHealthCheck } from "./tools/health-check.js";
-import { handleAnalyzeProject } from "./tools/analyze-project.js";
 import { handleApplyQuickFix } from "./tools/apply-quick-fix.js";
 import { handleApplyAllQuickFixes } from "./tools/apply-all-quick-fixes.js";
 import { getSloopBridge } from "./state.js";
@@ -37,7 +36,7 @@ const server = new McpServer({
 server.registerTool(
   'check_quality',
   {
-    description: "Check a file for code quality issues — bugs, code smells, security vulnerabilities, and complexity problems. Like having SonarLint in your IDE. Use after writing or modifying code to catch issues early. Returns issues with exact line numbers, severity, and available quick fixes. For multiple files use check_files; for whole projects use check_project.",
+    description: "Check a file for code quality issues — bugs, code smells, security vulnerabilities, and complexity problems. Like having SonarLint in your IDE. Use after writing or modifying code to catch issues early. Returns issues with exact line numbers, severity, and available quick fixes. For multiple files use check_files.",
     inputSchema: {
       filePath: z.string().describe("Absolute path to the file to analyze (e.g., /path/to/file.js)"),
       minSeverity: z.enum(["INFO", "MINOR", "MAJOR", "CRITICAL", "BLOCKER"]).optional().describe("Minimum severity level to include. Filters out issues below this level. Default: INFO (show all)"),
@@ -57,9 +56,9 @@ server.registerTool(
 server.registerTool(
   'check_files',
   {
-    description: "Check multiple files for code quality issues in one call — bugs, code smells, security vulnerabilities. Use when reviewing or modifying several files. Output is compact: only files with issues are shown, clean files get a summary count. For a single file use check_quality; for whole projects use check_project.",
+    description: "Check multiple files for code quality issues in one call — bugs, code smells, security vulnerabilities. Use when reviewing or modifying several files. Supports glob patterns (e.g. 'src/**/*.ts'). Output is compact: only files with issues are shown, clean files get a summary count. For a single file use check_quality.",
     inputSchema: {
-      filePaths: stringArray.describe("Array of absolute file paths to analyze"),
+      filePaths: stringArray.describe("Array of file paths or glob patterns to analyze (e.g., ['/path/to/file.ts', 'src/**/*.js'])"),
       groupByFile: z.boolean().optional().default(true).describe("Group issues by file in output (default: true)"),
       minSeverity: z.enum(["INFO", "MINOR", "MAJOR", "CRITICAL", "BLOCKER"]).optional().describe("Minimum severity level to include. Filters out issues below this level. Default: INFO (show all)"),
       excludeRules: stringArray.optional().describe("List of rule IDs to exclude (e.g., ['typescript:S1135', 'javascript:S125'])"),
@@ -122,28 +121,6 @@ server.registerTool(
   async () => {
     try {
       return await handleHealthCheck();
-    } catch (error) {
-      return handleToolError(error);
-    }
-  }
-);
-
-// Register tool: check_project
-server.registerTool(
-  'check_project',
-  {
-    description: "Run a full code quality scan on a project directory — finds bugs, code smells, security vulnerabilities, and complexity issues across all source files. Use for project-wide quality assessment or before a release. Output is compact: only files with issues are shown, clean files get a summary count.",
-    inputSchema: {
-      projectPath: z.string().describe("Absolute path to the project directory to scan"),
-      maxFiles: z.number().optional().default(100).describe("Maximum number of files to analyze (default: 100, prevents overwhelming output)"),
-      minSeverity: z.enum(["INFO", "MINOR", "MAJOR", "CRITICAL", "BLOCKER"]).optional().describe("Minimum severity level to include. Filters out issues below this level. Default: INFO (show all)"),
-      excludeRules: stringArray.optional().describe("List of rule IDs to exclude (e.g., ['typescript:S1135', 'javascript:S125'])"),
-      includePatterns: stringArray.optional().describe("File glob patterns to include (e.g., ['src/**/*.ts', 'lib/**/*.js']). Default: all supported extensions"),
-    },
-  },
-  async (args) => {
-    try {
-      return await handleAnalyzeProject(args);
     } catch (error) {
       return handleToolError(error);
     }
@@ -214,7 +191,7 @@ async function main() {
   console.error("[MCP] Starting SonarLint MCP Server...");
   console.error(`[MCP] Version: ${packageJson.version}`);
   console.error("[MCP] Mode: Standalone (no IDE required)");
-  console.error("[MCP] Tools: check_quality, check_files, check_code, check_project, list_rules, fix_issue, fix_all_issues, health_check");
+  console.error("[MCP] Tools: check_quality, check_files, check_code, list_rules, fix_issue, fix_all_issues, health_check");
   console.error("[MCP] Features:");
   console.error("[MCP]   - Session storage for multi-turn conversations");
   console.error("[MCP]   - Batch analysis for multiple files");

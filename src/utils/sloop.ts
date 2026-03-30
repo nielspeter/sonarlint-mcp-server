@@ -23,6 +23,9 @@ export async function ensureSloopBridge(): Promise<SloopBridge> {
     return existing;
   }
 
+  const t0 = Date.now();
+  const elapsed = () => `${((Date.now() - t0) / 1000).toFixed(1)}s`;
+
   console.error("[MCP] Initializing SLOOP bridge...");
 
   // Check if plugins are downloaded
@@ -36,10 +39,12 @@ export async function ensureSloopBridge(): Promise<SloopBridge> {
   }
 
   try {
+    console.error(`[MCP] +${elapsed()} Creating bridge...`);
     const bridge = new SloopBridge(PACKAGE_ROOT);
+    console.error(`[MCP] +${elapsed()} Connecting (starts Java + sends initialize)...`);
     await bridge.connect();
     setSloopBridge(bridge);
-    console.error("[MCP] SLOOP bridge initialized successfully");
+    console.error(`[MCP] +${elapsed()} SLOOP bridge initialized successfully`);
     return bridge;
   } catch (error) {
     throw new SloopError(

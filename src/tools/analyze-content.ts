@@ -51,7 +51,7 @@ export async function handleAnalyzeContent(args: any) {
     const bridge = await ensureSloopBridge();
 
     // Get or create scope
-    const scopeId = getOrCreateScope(tempFilePath);
+    const scopeId = await getOrCreateScope(tempFilePath);
 
     // Analyze the temp file
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [tempFilePath]);

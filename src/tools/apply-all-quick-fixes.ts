@@ -21,7 +21,7 @@ export async function handleApplyAllQuickFixes(args: any) {
 
   // Analyze the file to get all issues with quick fixes
   const bridge = await ensureSloopBridge();
-  const scopeId = getOrCreateScope(filePath);
+  const scopeId = await getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
   const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 

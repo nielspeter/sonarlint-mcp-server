@@ -97,7 +97,6 @@ function process(data) {
 |------|-------------|
 | `check_quality` | Check a file for code quality issues |
 | `check_files` | Check multiple files in one call |
-| `check_project` | Run a full project-wide quality scan |
 | `check_code` | Check a code snippet (no file on disk needed) |
 | `fix_issue` | Automatically fix one specific issue |
 | `fix_all_issues` | Automatically fix all fixable issues in a file |
@@ -157,6 +156,20 @@ The server uses SonarLint's standalone SLOOP backend with:
 - **Bundled JRE:** Java 17
 - **Bi-directional RPC:** Client request handlers implemented
 - **Session Storage:** Results stored in memory for multi-turn conversations
+
+### SLOOP Integration: Scope Lifecycle
+
+SLOOP requires a specific initialization sequence. Getting this wrong causes analysis to hang:
+
+1. **Pre-register files** — Store file DTOs in `scopeFiles` map before creating the scope. SLOOP calls `listFiles` synchronously during scope creation, so files must already be available.
+2. **Create scope** — Send `addConfigurationScope` notification to SLOOP.
+3. **Wait for readiness** — SLOOP sends `didChangeAnalysisReadiness` when the scope is ready. Analysis requests before this point will fail silently.
+4. **Analyse** — Call `analyzeFilesAndTrack` with the files.
+
+Key design decisions:
+- **No directory scanning in `listFiles`** — Only return the specific files requested for analysis. Scanning the project root returned 500+ files on real projects and caused multi-minute hangs.
+- **`getBaseDir` returns project root** — Detected via `package.json`, `.git`, etc. SLOOP uses this for `.gitignore` matching and file exclusion patterns.
+- **`ideRelativePath` relative to project root** — SLOOP's `WildcardPattern.match` requires this; null values cause NPEs.
 
 ## Development
 

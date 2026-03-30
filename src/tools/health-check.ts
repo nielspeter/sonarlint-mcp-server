@@ -82,7 +82,7 @@ export async function handleHealthCheck() {
       rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
     },
     cache: cacheStats,
-    tools: ["check_quality", "check_files", "check_code", "check_project", "list_rules", "fix_issue", "fix_all_issues", "health_check"],
+    tools: ["check_quality", "check_files", "check_code", "list_rules", "fix_issue", "fix_all_issues", "health_check"],
     features: [
       "Session storage for multi-turn conversations",
       "Batch analysis",

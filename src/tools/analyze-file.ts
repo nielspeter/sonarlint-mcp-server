@@ -40,7 +40,7 @@ export async function handleAnalyzeFile(args: any) {
   const bridge = await ensureSloopBridge();
 
   // Get or create scope
-  const scopeId = getOrCreateScope(filePath);
+  const scopeId = await getOrCreateScope(filePath);
 
   console.error(`[MCP] Analyzing file: ${filePath}`);
   console.error(`[MCP] Scope: ${scopeId}, Language: ${language}`);

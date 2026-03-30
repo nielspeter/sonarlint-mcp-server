@@ -13,3 +13,4 @@ sonarlint-backend/
 test-*.js
 test-*.py
 test-*.ts
+/.serena/

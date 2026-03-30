@@ -20,7 +20,7 @@ export async function handleApplyQuickFix(args: any) {
 
   // Re-analyze the file to get current issues with quick fixes
   const bridge = await ensureSloopBridge();
-  const scopeId = getOrCreateScope(filePath);
+  const scopeId = await getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
   const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
 

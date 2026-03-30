@@ -11,6 +11,12 @@ export let sloopBridge: SloopBridge | null = null;
 // Project root -> scopeId mapping
 export const scopeMap = new Map<string, string>();
 
+// Reverse mapping: scopeId -> projectRoot (used by SLOOP callbacks like listFiles, getBaseDir)
+export const scopeToProjectRoot = new Map<string, string>();
+
+// scopeId -> registered file DTOs (so listFiles returns only files we care about)
+export const scopeFiles = new Map<string, any[]>();
+
 // Session storage for analysis results (for MCP resources)
 export const sessionResults = new Map<string, AnalysisResult>();
 export const batchResults = new Map<string, BatchAnalysisResult>();

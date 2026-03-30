@@ -1,4 +1,10 @@
 import { existsSync } from "fs";
+import { createRequire } from "module";
+import { resolve } from "path";
+
+// globSync is available in Node 22+ but @types/node doesn't export it yet
+const require = createRequire(import.meta.url);
+const { globSync } = require("fs") as { globSync: (pattern: string, options?: { cwd?: string }) => string[] };
 import { SloopError } from "../errors.js";
 import { ensureSloopBridge } from "../utils/sloop.js";
 import { getOrCreateScope } from "../utils/scope.js";
@@ -8,23 +14,52 @@ import { formatBatchAnalysisResult } from "../utils/formatting.js";
 import { batchResults } from "../state.js";
 import type { AnalysisIssue, BatchAnalysisResult } from "../types.js";
 
+/**
+ * Expand glob patterns in file paths. Entries without glob characters are
+ * returned as-is; entries with * or ? are expanded via fs.globSync.
+ */
+function expandGlobs(paths: string[]): string[] {
+  const result: string[] = [];
+  for (const p of paths) {
+    if (p.includes('*') || p.includes('?')) {
+      const matches = globSync(p, { cwd: process.cwd() });
+      result.push(...matches.map(m => resolve(m)));
+    } else {
+      result.push(p);
+    }
+  }
+  // Deduplicate (multiple globs could match the same file)
+  return [...new Set(result)];
+}
+
 export async function handleAnalyzeFiles(args: any) {
-  const { filePaths, minSeverity, excludeRules } = args as {
+  const { filePaths: rawPaths, minSeverity, excludeRules } = args as {
     filePaths: string[];
     groupByFile?: boolean;
     minSeverity?: string;
     excludeRules?: string[]
   };
 
-  if (!Array.isArray(filePaths) || filePaths.length === 0) {
+  if (!Array.isArray(rawPaths) || rawPaths.length === 0) {
     throw new SloopError(
       "No files provided",
-      "Please provide at least one file path to analyze.",
+      "Please provide at least one file path or glob pattern to analyze.",
       false
     );
   }
 
-  // Validate all files exist
+  // Expand any glob patterns (e.g. "src/**/*.ts") into concrete file paths
+  const filePaths = expandGlobs(rawPaths);
+
+  if (filePaths.length === 0) {
+    throw new SloopError(
+      "No files matched",
+      `No files matched the provided patterns:\n${rawPaths.map(p => `- ${p}`).join('\n')}`,
+      false
+    );
+  }
+
+  // Validate all resolved files exist
   const missingFiles = filePaths.filter(fp => !existsSync(fp));
   if (missingFiles.length > 0) {
     throw new SloopError(
@@ -36,18 +71,19 @@ export async function handleAnalyzeFiles(args: any) {
 
   console.error(`[MCP] Batch analyzing ${filePaths.length} files...`);
 
+  // Ensure SLOOP is initialized
+  const bridge = await ensureSloopBridge();
+
   // Group files by project root for scope management
+  // Pass all files to getOrCreateScope so they're pre-registered for listFiles
   const filesByScope = new Map<string, string[]>();
   for (const filePath of filePaths) {
-    const scopeId = getOrCreateScope(filePath);
+    const scopeId = await getOrCreateScope(filePath, filePaths);
     if (!filesByScope.has(scopeId)) {
       filesByScope.set(scopeId, []);
     }
     filesByScope.get(scopeId)!.push(filePath);
   }
-
-  // Ensure SLOOP is initialized
-  const bridge = await ensureSloopBridge();
 
   // Analyze each scope
   const allResults: Array<{

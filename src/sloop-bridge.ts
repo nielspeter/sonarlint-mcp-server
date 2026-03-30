@@ -1,10 +1,11 @@
 import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { tmpdir } from 'os';
-import { join, relative } from 'path';
-import { existsSync, mkdirSync, readdirSync, statSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
 import { IssueCollector } from './utils/issue-collector.js';
 import { buildClientFileDtos } from './utils/file-registration.js';
+import { scopeToProjectRoot, scopeFiles } from './state.js';
 
 interface SloopConfig {
   javaPath?: string;
@@ -237,135 +238,41 @@ export class SloopBridge extends EventEmitter {
           const count = Object.values(hotspotsByFileUri).reduce((sum: number, arr: any) => sum + arr.length, 0);
           console.error(`[SLOOP] Received raiseHotspots: ${count} hotspots for analysis ${analysisId}`);
         }
-      }
-    }
-  }
-
-  private findFilesInDirectory(dir: string, baseDir?: string): string[] {
-    if (!baseDir) baseDir = dir;
-    const files: string[] = [];
-
-    try {
-      const items = readdirSync(dir);
-      for (const item of items) {
-        const fullPath = join(dir, item);
-        const relativePath = relative(baseDir, fullPath);
-
-        // Skip excluded directories
-        if (relativePath.startsWith('node_modules') || relativePath.startsWith('.git') ||
-            relativePath.startsWith('dist') || relativePath.startsWith('build')) {
-          continue;
-        }
-
-        const stat = statSync(fullPath);
-        if (stat.isDirectory()) {
-          files.push(...this.findFilesInDirectory(fullPath, baseDir));
-        } else if (stat.isFile()) {
-          // Only include source files
-          if (/\.(js|ts|py|java|html|css|php|go|rb)$/.test(item)) {
-            files.push(`file://${fullPath}`);
+      } else if (message.method === 'didChangeAnalysisReadiness' && message.params) {
+        const { configurationScopeIds, areReadyForAnalysis } = message.params;
+        console.error(`[SLOOP] Analysis readiness changed: scopes=${configurationScopeIds}, ready=${areReadyForAnalysis}`);
+        if (areReadyForAnalysis) {
+          for (const scopeId of configurationScopeIds) {
+            this.emit('scopeReady', scopeId);
           }
         }
       }
-    } catch (err) {
-      console.error('Error reading directory:', dir, err);
     }
-
-    return files;
   }
 
   private handleClientRequest(request: any): void {
     console.error(`[DEBUG] Handling client request: ${request.method}`);
 
-    // Implement listFiles - SLOOP needs to know what files exist
+    // listFiles — return only the files pre-registered in scopeFiles.
+    // IMPORTANT: Do NOT scan the project directory here. SLOOP calls listFiles
+    // during addConfigurationScope, so only the files the caller asked to analyse
+    // should be returned. Scanning caused 500+ file responses and hangs on real
+    // projects. Files are pre-registered in getOrCreateScope() before the scope
+    // is created. See scope.ts for the full sequencing explanation.
     if (request.method === 'listFiles') {
       const configScopeId = request.params?.configScopeId;
-      const baseDir = process.cwd();
-      const fileDtos: any[] = [];
-
-      // Helper to detect language from extension
-      const detectLanguage = (filePath: string): string | null => {
-        if (filePath.endsWith('.js')) return 'JS';
-        if (filePath.endsWith('.ts')) return 'TS';
-        if (filePath.endsWith('.py')) return 'PYTHON';
-        if (filePath.endsWith('.java')) return 'JAVA';
-        if (filePath.endsWith('.html')) return 'HTML';
-        if (filePath.endsWith('.css')) return 'CSS';
-        return null;
-      };
-
-      // Scan root directory for source files
-      try {
-        const rootItems = readdirSync(baseDir);
-        for (const item of rootItems) {
-          const fullPath = join(baseDir, item);
-          try {
-            const stat = statSync(fullPath);
-            if (stat.isFile() && /\.(js|ts|py|java|html|css|php|go|rb)$/.test(item)) {
-              const content = readFileSync(fullPath, 'utf-8');
-              const relativePath = relative(baseDir, fullPath);
-              const language = detectLanguage(fullPath);
-
-              // Debug: Log first 200 chars of content for test files
-              if (item === 'test-simple.js' || item === 'test-python.py') {
-                console.error(`[DEBUG listFiles] ${item}: ${content.substring(0, 200)}`);
-              }
-
-              fileDtos.push({
-                uri: `file://${fullPath}`,
-                fsPath: fullPath,
-                ideRelativePath: relativePath,
-                configScopeId: configScopeId,
-                isTest: false,
-                charset: 'UTF-8',
-                content: content,
-                detectedLanguage: language,
-                isUserDefined: true  // CRITICAL: Must be true for SLOOP to analyze!
-              });
-            } else if (stat.isDirectory() && item === 'src') {
-              // Only scan src directory recursively
-              const srcFiles = this.findFilesInDirectory(fullPath);
-              for (const fileUri of srcFiles) {
-                const filePath = fileUri.replace('file://', '');
-                try {
-                  const content = readFileSync(filePath, 'utf-8');
-                  const relativePath = relative(baseDir, filePath);
-                  const language = detectLanguage(filePath);
-
-                  fileDtos.push({
-                    uri: fileUri,
-                    fsPath: filePath,
-                    ideRelativePath: relativePath,
-                    configScopeId: configScopeId,
-                    isTest: relativePath.includes('test'),
-                    charset: 'UTF-8',
-                    content: content,
-                    detectedLanguage: language,
-                    isUserDefined: true  // CRITICAL: Must be true for SLOOP to analyze!
-                  });
-                } catch (readErr) {
-                  console.error(`Could not read file ${filePath}:`, readErr);
-                }
-              }
-            }
-          } catch (e) {
-            // Skip files we can't access
-          }
-        }
-      } catch (err) {
-        console.error('Error listing files:', err);
-      }
-
-      console.error(`[DEBUG] Returning ${fileDtos.length} ClientFileDto objects for listFiles`);
+      const fileDtos = scopeFiles.get(configScopeId) || [];
+      console.error(`[DEBUG] listFiles for scope ${configScopeId}: returning ${fileDtos.length} registered files`);
       this.sendResponse(request.id, { files: fileDtos });
       return;
     }
 
     // Implement getBaseDir - SLOOP needs the base directory for the config scope
     if (request.method === 'getBaseDir') {
-      // Return current working directory as base dir
-      const basePath = process.cwd();
-      this.sendResponse(request.id, { path: basePath });
+      const configScopeId = request.params?.configurationScopeId ?? request.params?.configScopeId;
+      const projectRoot = scopeToProjectRoot.get(configScopeId) || process.cwd();
+      console.error(`[DEBUG] getBaseDir for scope ${configScopeId}: ${projectRoot}`);
+      this.sendResponse(request.id, { path: projectRoot });
       return;
     }
 
@@ -610,6 +517,29 @@ export class SloopBridge extends EventEmitter {
     return this.sendRequest('rules/listAllStandaloneRulesDefinitions');
   }
 
+  /**
+   * Wait for a scope to become ready for analysis.
+   * SLOOP emits didChangeAnalysisReadiness after processing addConfigurationScope.
+   */
+  waitForScopeReady(scopeId: string, timeoutMs = 30000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.removeListener('scopeReady', onReady);
+        reject(new Error(`Timeout waiting for scope ${scopeId} to become ready`));
+      }, timeoutMs);
+
+      const onReady = (readyScopeId: string) => {
+        if (readyScopeId === scopeId) {
+          clearTimeout(timer);
+          this.removeListener('scopeReady', onReady);
+          resolve();
+        }
+      };
+
+      this.on('scopeReady', onReady);
+    });
+  }
+
   addConfigurationScope(scopeId: string, params: { name?: string, parentId?: string } = {}): void {
     this.sendNotification('configuration/didAddConfigurationScopes', {
       addedScopes: [{
@@ -638,7 +568,13 @@ export class SloopBridge extends EventEmitter {
     const startTime = Date.now();
 
     // Register files in SLOOP's virtual file system before analysis
-    const fileDtos = buildClientFileDtos(filePaths, configScopeId);
+    const projectRoot = scopeToProjectRoot.get(configScopeId);
+    const fileDtos = buildClientFileDtos(filePaths, configScopeId, projectRoot);
+
+    // Store so listFiles callback returns only these files, not a full directory scan
+    const existing = scopeFiles.get(configScopeId) || [];
+    scopeFiles.set(configScopeId, [...existing, ...fileDtos]);
+
     this.sendNotification('file/didUpdateFileSystem', {
       addedFiles: fileDtos,
       changedFiles: [],
