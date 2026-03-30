@@ -2,15 +2,38 @@
  * Configuration scope management utilities
  */
 
-import { dirname } from "path";
+import { dirname, join } from "path";
+import { existsSync } from "fs";
 import { createHash } from "crypto";
 import { scopeMap, getSloopBridge } from "../state.js";
 
 /**
- * Get or create configuration scope for a project
+ * Find the project root by walking up to find package.json, .git, etc.
+ */
+function findProjectRoot(startPath: string): string {
+  let dir = startPath;
+  const markers = ['package.json', '.git', 'pom.xml', 'build.gradle', 'pyproject.toml', 'go.mod'];
+
+  while (dir !== dirname(dir)) { // stop at filesystem root
+    for (const marker of markers) {
+      if (existsSync(join(dir, marker))) {
+        return dir;
+      }
+    }
+    dir = dirname(dir);
+  }
+
+  // Fallback: use the original directory
+  return startPath;
+}
+
+/**
+ * Get or create configuration scope for a project.
+ * Uses the project root (detected via package.json, .git, etc.) so all files
+ * in the same project share one scope and one analysis call.
  */
 export function getOrCreateScope(filePath: string): string {
-  const projectRoot = dirname(filePath);
+  const projectRoot = findProjectRoot(dirname(filePath));
   const scopeId = scopeMap.get(projectRoot);
 
   if (scopeId) {
