@@ -16,20 +16,29 @@ import { batchResults } from "../state.js";
 import type { AnalysisIssue, BatchAnalysisResult } from "../types.js";
 
 /**
- * Expand glob patterns in file paths. Entries without glob characters are
- * returned as-is; entries with * or ? are expanded via fs.globSync.
+ * Expand glob patterns and resolve relative paths against basePath.
+ * Absolute paths/globs are used as-is; relative ones need basePath.
  */
-function expandGlobs(paths: string[]): string[] {
+function expandGlobs(paths: string[], basePath?: string): string[] {
   const result: string[] = [];
   for (const p of paths) {
+    const isRelative = !p.startsWith('/');
+    if (isRelative && !basePath) {
+      throw new SloopError(
+        `Relative path requires basePath: ${p}`,
+        `Relative paths need a basePath to resolve against. Provide basePath (the project root) or use absolute paths.`,
+        false
+      );
+    }
+
     if (p.includes('*') || p.includes('?')) {
-      const matches = globSync(p, { cwd: process.cwd() });
-      result.push(...matches.map(m => resolve(m)));
+      const cwd = isRelative ? basePath! : process.cwd();
+      const matches = globSync(p, { cwd });
+      result.push(...matches.map((m: string) => resolve(cwd, m)));
     } else {
-      result.push(p);
+      result.push(isRelative ? resolve(basePath!, p) : p);
     }
   }
-  // Deduplicate (multiple globs could match the same file)
   return [...new Set(result)];
 }
 
@@ -40,8 +49,8 @@ interface FileResult {
   issues: AnalysisIssue[];
 }
 
-function resolveAndValidatePaths(rawPaths: string[]): string[] {
-  const filePaths = expandGlobs(rawPaths);
+function resolveAndValidatePaths(rawPaths: string[], basePath?: string): string[] {
+  const filePaths = expandGlobs(rawPaths, basePath);
 
   if (filePaths.length === 0) {
     throw new SloopError(
@@ -94,8 +103,9 @@ function buildSummary(allResults: FileResult[]): BatchAnalysisResult['summary'] 
 }
 
 export async function handleAnalyzeFiles(args: any) {
-  const { filePaths: rawPaths, minSeverity, excludeRules } = args as {
+  const { filePaths: rawPaths, basePath, minSeverity, excludeRules } = args as {
     filePaths: string[];
+    basePath?: string;
     groupByFile?: boolean;
     minSeverity?: string;
     excludeRules?: string[]
@@ -109,7 +119,7 @@ export async function handleAnalyzeFiles(args: any) {
     );
   }
 
-  const filePaths = resolveAndValidatePaths(rawPaths);
+  const filePaths = resolveAndValidatePaths(rawPaths, basePath);
   console.error(`[MCP] Batch analyzing ${filePaths.length} files...`);
 
   const bridge = await ensureSloopBridge();

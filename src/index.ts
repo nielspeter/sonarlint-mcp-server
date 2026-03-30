@@ -56,9 +56,10 @@ server.registerTool(
 server.registerTool(
   'check_files',
   {
-    description: "Check multiple files for code quality issues in one call — bugs, code smells, security vulnerabilities. Use when reviewing or modifying several files. Supports glob patterns (e.g. 'src/**/*.ts'). Output is compact: only files with issues are shown, clean files get a summary count. For a single file use check_quality.",
+    description: "Check multiple files for code quality issues in one call — bugs, code smells, security vulnerabilities. Use when reviewing or modifying several files. Supports glob patterns (e.g. 'src/**/*.ts'). When using relative paths or globs, provide basePath so they resolve correctly. Output is compact: only files with issues are shown, clean files get a summary count. For a single file use check_quality.",
     inputSchema: {
       filePaths: stringArray.describe("Array of file paths or glob patterns to analyze (e.g., ['/path/to/file.ts', 'src/**/*.js'])"),
+      basePath: z.string().optional().describe("Project root directory for resolving relative paths and globs (e.g., '/Users/me/project'). Required when filePaths contains relative paths."),
       groupByFile: z.boolean().optional().default(true).describe("Group issues by file in output (default: true)"),
       minSeverity: z.enum(["INFO", "MINOR", "MAJOR", "CRITICAL", "BLOCKER"]).optional().describe("Minimum severity level to include. Filters out issues below this level. Default: INFO (show all)"),
       excludeRules: stringArray.optional().describe("List of rule IDs to exclude (e.g., ['typescript:S1135', 'javascript:S125'])"),

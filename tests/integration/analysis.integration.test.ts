@@ -328,6 +328,53 @@ def greet():
     }, 120_000);
   });
 
+  // --- basePath with relative paths/globs ---
+
+  describe('basePath for relative paths', () => {
+    let projectDir: string;
+
+    beforeAll(() => {
+      projectDir = createProject('basepath-test');
+      writeJsFileWithIssues(projectDir, 'app.js', 0);
+      writeJsFileWithIssues(projectDir, 'util.js', 1);
+      const srcDir = join(projectDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeJsFileWithIssues(srcDir, 'index.js', 2);
+    });
+
+    it('should resolve relative file paths with basePath', async () => {
+      const result = await client.callTool('check_files', {
+        filePaths: ['app.js', 'util.js'],
+        basePath: projectDir,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toMatch(/Files Analyzed\*\*: 2/i);
+    }, 120_000);
+
+    it('should resolve relative glob patterns with basePath', async () => {
+      const result = await client.callTool('check_files', {
+        filePaths: ['**/*.js'],
+        basePath: projectDir,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toMatch(/Files Analyzed\*\*: 3/i);
+    }, 120_000);
+
+    it('should reject relative paths without basePath', async () => {
+      const result = await client.callTool('check_files', {
+        filePaths: ['src/index.js'],
+      });
+
+      expect(result).toBeDefined();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toMatch(/basePath/i);
+    }, 30_000);
+  });
+
   // --- Severity filter ---
 
   describe('severity filtering', () => {
