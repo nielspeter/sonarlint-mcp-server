@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { join } from 'path';
 import { findConfigFile, transformRuleConfig, loadRuleConfig } from '../../src/utils/config.js';
 
 // Mock fs module
@@ -25,14 +26,14 @@ describe('findConfigFile', () => {
     mockExistsSync.mockImplementation((p) => String(p).endsWith('sonarlint.json') && !String(p).includes('.sonarlint'));
 
     const result = findConfigFile('/project');
-    expect(result).toBe('/project/sonarlint.json');
+    expect(result).toBe(join('/project', 'sonarlint.json'));
   });
 
   it('should fall back to .sonarlint/settings.json', () => {
-    mockExistsSync.mockImplementation((p) => String(p).includes('.sonarlint/settings.json'));
+    mockExistsSync.mockImplementation((p) => String(p).includes('.sonarlint') && String(p).endsWith('settings.json'));
 
     const result = findConfigFile('/project');
-    expect(result).toBe('/project/.sonarlint/settings.json');
+    expect(result).toBe(join('/project', '.sonarlint', 'settings.json'));
   });
 
   it('should return null when neither exists', () => {
@@ -46,7 +47,7 @@ describe('findConfigFile', () => {
     mockExistsSync.mockReturnValue(true);
 
     const result = findConfigFile('/project');
-    expect(result).toBe('/project/sonarlint.json');
+    expect(result).toBe(join('/project', 'sonarlint.json'));
   });
 });
 
