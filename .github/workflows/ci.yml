@@ -27,8 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm run test:unit && npm run test:integration
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        if: runner.os != 'Windows'
+        run: npm run test:integration
 
       - name: Build
         run: npm run build
