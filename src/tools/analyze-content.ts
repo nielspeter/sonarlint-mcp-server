@@ -1,32 +1,28 @@
-import { existsSync, writeFileSync, unlinkSync } from "fs";
-import { join, dirname } from "path";
-import { SloopError } from "../errors.js";
-import { ensureSloopBridge } from "../utils/sloop.js";
-import { getOrCreateScope } from "../utils/scope.js";
-import { transformSloopIssues, createSummary } from "../utils/transforms.js";
-import { formatAnalysisResult } from "../utils/formatting.js";
-import type { AnalysisResult } from "../types.js";
+import { existsSync, writeFileSync, unlinkSync } from 'fs';
+import { join, dirname } from 'path';
+import { SloopError } from '../errors.js';
+import { ensureSloopBridge } from '../utils/sloop.js';
+import { getOrCreateScope } from '../utils/scope.js';
+import { transformSloopIssues, createSummary } from '../utils/transforms.js';
+import { formatAnalysisResult } from '../utils/formatting.js';
+import type { AnalysisResult } from '../types.js';
 
 export async function handleAnalyzeContent(args: any) {
   const { content, language, fileName } = args as { content: string; language: string; fileName?: string };
 
   if (!content || content.trim().length === 0) {
-    throw new SloopError(
-      "Empty content",
-      "Please provide non-empty content to analyze.",
-      false
-    );
+    throw new SloopError('Empty content', 'Please provide non-empty content to analyze.', false);
   }
 
   // Generate filename with appropriate extension
   const languageExtMap: Record<string, string> = {
-    'javascript': '.js',
-    'typescript': '.ts',
-    'python': '.py',
-    'java': '.java',
-    'go': '.go',
-    'php': '.php',
-    'ruby': '.rb',
+    javascript: '.js',
+    typescript: '.ts',
+    python: '.py',
+    java: '.java',
+    go: '.go',
+    php: '.php',
+    ruby: '.rb',
   };
 
   const ext = languageExtMap[language] || '.txt';
@@ -57,8 +53,10 @@ export async function handleAnalyzeContent(args: any) {
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [tempFilePath]);
 
     // Extract issues from raw result
-    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
-    console.error(`[MCP] Found ${rawIssues.length} issues in content (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`);
+    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
+    console.error(
+      `[MCP] Found ${rawIssues.length} issues in content (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`,
+    );
 
     // Transform to simplified format
     const issues = transformSloopIssues(rawIssues);
@@ -77,7 +75,7 @@ export async function handleAnalyzeContent(args: any) {
     return {
       content: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: `${formattedResult}\n\n---\n*Note: Analyzed unsaved content*`,
         },
       ],

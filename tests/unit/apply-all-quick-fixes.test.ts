@@ -17,15 +17,17 @@ describe('apply_all_quick_fixes logic', () => {
   describe('issue filtering', () => {
     it('should filter issues that have quick fixes', () => {
       const issues = [
-        { ruleKey: 'javascript:S1481', textRange: { startLine: 5 }, quickFixes: [{ message: 'Remove unused variable' }] },
+        {
+          ruleKey: 'javascript:S1481',
+          textRange: { startLine: 5 },
+          quickFixes: [{ message: 'Remove unused variable' }],
+        },
         { ruleKey: 'javascript:S1854', textRange: { startLine: 10 }, quickFixes: [] }, // No quick fixes
         { ruleKey: 'javascript:S3626', textRange: { startLine: 15 }, quickFixes: [{ message: 'Remove return' }] },
         { ruleKey: 'javascript:S1172', textRange: { startLine: 20 } }, // quickFixes undefined
       ];
 
-      const issuesWithQuickFixes = issues.filter((issue: any) =>
-        issue.quickFixes && issue.quickFixes.length > 0
-      );
+      const issuesWithQuickFixes = issues.filter((issue: any) => issue.quickFixes && issue.quickFixes.length > 0);
 
       expect(issuesWithQuickFixes).toHaveLength(2);
       expect(issuesWithQuickFixes[0].ruleKey).toBe('javascript:S1481');
@@ -35,9 +37,7 @@ describe('apply_all_quick_fixes logic', () => {
     it('should handle empty issue list', () => {
       const issues: any[] = [];
 
-      const issuesWithQuickFixes = issues.filter((issue: any) =>
-        issue.quickFixes && issue.quickFixes.length > 0
-      );
+      const issuesWithQuickFixes = issues.filter((issue: any) => issue.quickFixes && issue.quickFixes.length > 0);
 
       expect(issuesWithQuickFixes).toHaveLength(0);
     });
@@ -48,9 +48,7 @@ describe('apply_all_quick_fixes logic', () => {
         { ruleKey: 'javascript:S1172', textRange: { startLine: 20 } },
       ];
 
-      const issuesWithQuickFixes = issues.filter((issue: any) =>
-        issue.quickFixes && issue.quickFixes.length > 0
-      );
+      const issuesWithQuickFixes = issues.filter((issue: any) => issue.quickFixes && issue.quickFixes.length > 0);
 
       expect(issuesWithQuickFixes).toHaveLength(0);
     });
@@ -116,12 +114,7 @@ describe('apply_all_quick_fixes logic', () => {
 
   describe('text edit application', () => {
     it('should apply single-line edit correctly', () => {
-      const lines = [
-        'function test() {',
-        '  var unused = 42;',
-        '  console.log("hello");',
-        '}',
-      ];
+      const lines = ['function test() {', '  var unused = 42;', '  console.log("hello");', '}'];
 
       // Simulate replacing "var" with "const" at line 1 (0-indexed)
       const startLine = 1;
@@ -138,11 +131,7 @@ describe('apply_all_quick_fixes logic', () => {
     });
 
     it('should apply edit that removes text', () => {
-      const lines = [
-        'function test() {',
-        '  return;',
-        '}',
-      ];
+      const lines = ['function test() {', '  return;', '}'];
 
       // Remove "return;" statement
       const startLine = 1;
@@ -157,12 +146,7 @@ describe('apply_all_quick_fixes logic', () => {
     });
 
     it('should handle multi-line edit', () => {
-      const lines = [
-        'function test() {',
-        '  if (true)',
-        '    console.log("hello");',
-        '}',
-      ];
+      const lines = ['function test() {', '  if (true)', '    console.log("hello");', '}'];
 
       // Replace lines 1-2 with properly formatted if statement
       const startLine = 1;
@@ -186,13 +170,9 @@ describe('apply_all_quick_fixes logic', () => {
         { line: 10, rule: 'javascript:S3626', message: 'Remove redundant return' },
       ];
 
-      const failedFixes = [
-        { line: 15, rule: 'javascript:S138', error: 'Could not apply fix' },
-      ];
+      const failedFixes = [{ line: 15, rule: 'javascript:S138', error: 'Could not apply fix' }];
 
-      const remainingIssues = [
-        { line: 20, rule: 'javascript:S1854', severity: 'MAJOR', message: 'Dead store' },
-      ];
+      const remainingIssues = [{ line: 20, rule: 'javascript:S1854', severity: 'MAJOR', message: 'Dead store' }];
 
       const filePath = '/test/file.js';
 
@@ -209,9 +189,7 @@ describe('apply_all_quick_fixes logic', () => {
     });
 
     it('should handle case with no failures', () => {
-      const appliedFixes = [
-        { line: 5, rule: 'javascript:S1481', message: 'Fix applied' },
-      ];
+      const appliedFixes = [{ line: 5, rule: 'javascript:S1481', message: 'Fix applied' }];
 
       const failedFixes: any[] = [];
 
@@ -248,11 +226,14 @@ describe('apply_all_quick_fixes logic', () => {
         { line: 20, rule: 'javascript:S4', severity: 'MINOR', message: 'Issue 4' },
       ];
 
-      const groupedBySeverity = issues.reduce((acc, issue) => {
-        if (!acc[issue.severity]) acc[issue.severity] = [];
-        acc[issue.severity].push(issue);
-        return acc;
-      }, {} as Record<string, typeof issues>);
+      const groupedBySeverity = issues.reduce(
+        (acc, issue) => {
+          if (!acc[issue.severity]) acc[issue.severity] = [];
+          acc[issue.severity].push(issue);
+          return acc;
+        },
+        {} as Record<string, typeof issues>,
+      );
 
       expect(groupedBySeverity['BLOCKER']).toHaveLength(2);
       expect(groupedBySeverity['MAJOR']).toHaveLength(1);
@@ -286,11 +267,7 @@ describe('apply_all_quick_fixes logic', () => {
       const failedFixes: any[] = [];
 
       // Simulate successful fix
-      try {
-        appliedFixes.push({ line: 5, rule: 'javascript:S1481', message: 'Fixed' });
-      } catch (error) {
-        failedFixes.push({ line: 5, rule: 'javascript:S1481', error: 'Failed' });
-      }
+      appliedFixes.push({ line: 5, rule: 'javascript:S1481', message: 'Fixed' });
 
       // Simulate failed fix
       try {
@@ -299,7 +276,7 @@ describe('apply_all_quick_fixes logic', () => {
         failedFixes.push({
           line: 10,
           rule: 'javascript:S3626',
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
 
@@ -312,9 +289,7 @@ describe('apply_all_quick_fixes logic', () => {
   describe('edge cases', () => {
     it('should handle file with no issues', () => {
       const rawIssues: any[] = [];
-      const issuesWithQuickFixes = rawIssues.filter((issue: any) =>
-        issue.quickFixes && issue.quickFixes.length > 0
-      );
+      const issuesWithQuickFixes = rawIssues.filter((issue: any) => issue.quickFixes && issue.quickFixes.length > 0);
 
       expect(issuesWithQuickFixes).toHaveLength(0);
     });
@@ -325,9 +300,7 @@ describe('apply_all_quick_fixes logic', () => {
         { ruleKey: 'javascript:S1172', textRange: { startLine: 20 }, quickFixes: [] },
       ];
 
-      const issuesWithQuickFixes = rawIssues.filter((issue: any) =>
-        issue.quickFixes && issue.quickFixes.length > 0
-      );
+      const issuesWithQuickFixes = rawIssues.filter((issue: any) => issue.quickFixes && issue.quickFixes.length > 0);
 
       expect(issuesWithQuickFixes).toHaveLength(0);
     });
@@ -340,9 +313,9 @@ describe('apply_all_quick_fixes logic', () => {
             textEdits: [
               { range: { startLine: 5, startLineOffset: 0, endLine: 5, endLineOffset: 3 }, newText: 'const' },
               { range: { startLine: 10, startLineOffset: 0, endLine: 10, endLineOffset: 3 }, newText: 'const' },
-            ]
-          }
-        ]
+            ],
+          },
+        ],
       };
 
       const edits = quickFix.fileEdits[0].textEdits;

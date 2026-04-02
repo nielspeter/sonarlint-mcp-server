@@ -1,13 +1,21 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { SloopError } from "../errors.js";
-import { ensureSloopBridge } from "../utils/sloop.js";
-import { getOrCreateScope } from "../utils/scope.js";
-import { notifyFileSystemChanged } from "../utils/filesystem.js";
-import { transformSloopIssues } from "../utils/transforms.js";
-import { applyTextEdits } from "../utils/quick-fix.js";
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { SloopError } from '../errors.js';
+import { ensureSloopBridge } from '../utils/sloop.js';
+import { getOrCreateScope } from '../utils/scope.js';
+import { notifyFileSystemChanged } from '../utils/filesystem.js';
+import { transformSloopIssues } from '../utils/transforms.js';
+import { applyTextEdits } from '../utils/quick-fix.js';
 
-interface FixResult { line: number; rule: string; message: string }
-interface FixFailure { line: number; rule: string; error: string }
+interface FixResult {
+  line: number;
+  rule: string;
+  message: string;
+}
+interface FixFailure {
+  line: number;
+  rule: string;
+  error: string;
+}
 
 function applyFixesToFile(filePath: string, issues: any[]): { applied: FixResult[]; failed: FixFailure[] } {
   const applied: FixResult[] = [];
@@ -36,9 +44,12 @@ function applyFixesToFile(filePath: string, issues: any[]): { applied: FixResult
   return { applied, failed };
 }
 
-function formatFixList(label: string, items: Array<{ line: number; rule: string; message?: string; error?: string }>): string {
+function formatFixList(
+  label: string,
+  items: Array<{ line: number; rule: string; message?: string; error?: string }>,
+): string {
   if (items.length === 0) return '';
-  const lines = items.map(i => `- Line ${i.line}: ${i.rule} - ${i.message || i.error}`);
+  const lines = items.map((i) => `- Line ${i.line}: ${i.rule} - ${i.message || i.error}`);
   return `**${label}:**\n${lines.join('\n')}\n\n`;
 }
 
@@ -47,7 +58,7 @@ function formatRemainingIssues(remaining: ReturnType<typeof transformSloopIssues
 
   let out = `**Remaining Issues (require manual fixing):**\n`;
   for (const severity of ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO']) {
-    const issues = remaining.filter(i => i.severity === severity);
+    const issues = remaining.filter((i) => i.severity === severity);
     if (issues.length === 0) continue;
     out += `\n${severity} (${issues.length}):\n`;
     for (const issue of issues) out += `- Line ${issue.line}: ${issue.rule} - ${issue.message}\n`;
@@ -77,39 +88,43 @@ export async function handleApplyAllQuickFixes(args: any) {
     throw new SloopError(
       `File not found: ${filePath}`,
       `The file ${filePath} does not exist. Please check the path and try again.`,
-      false
+      false,
     );
   }
 
-  const bridge = await ensureSloopBridge();
+  const bridge = await ensureSloopBridge(filePath);
   const scopeId = await getOrCreateScope(filePath);
   const rawResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
 
   const fixableIssues = rawIssues.filter((issue: any) => issue.quickFixes?.length > 0);
 
   if (fixableIssues.length === 0) {
     return {
-      content: [{
-        type: "text" as const,
-        text: `ℹ️ **No quick fixes available**\n\nFile: ${filePath}\nTotal issues: ${rawIssues.length}\n\nNone of the issues in this file have automated quick fixes available. All issues must be fixed manually.`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `ℹ️ **No quick fixes available**\n\nFile: ${filePath}\nTotal issues: ${rawIssues.length}\n\nNone of the issues in this file have automated quick fixes available. All issues must be fixed manually.`,
+        },
+      ],
     };
   }
 
   const { applied, failed } = applyFixesToFile(filePath, fixableIssues);
 
   await notifyFileSystemChanged(filePath, scopeId);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   const finalResult = await bridge.analyzeFilesAndTrack(scopeId, [filePath]);
-  const remainingRaw = finalResult.raisedIssues?.length ? finalResult.raisedIssues : (finalResult.rawIssues || []);
+  const remainingRaw = finalResult.raisedIssues?.length ? finalResult.raisedIssues : finalResult.rawIssues || [];
   const remaining = transformSloopIssues(remainingRaw);
 
   return {
-    content: [{
-      type: "text" as const,
-      text: formatSummary(filePath, applied, failed, remaining),
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: formatSummary(filePath, applied, failed, remaining),
+      },
+    ],
   };
 }

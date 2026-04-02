@@ -2,7 +2,7 @@
  * Output formatting utilities
  */
 
-import type { AnalysisResult, BatchAnalysisResult } from "../types.js";
+import type { AnalysisResult, BatchAnalysisResult } from '../types.js';
 
 /**
  * Format analysis result for display
@@ -16,7 +16,7 @@ export function formatAnalysisResult(result: AnalysisResult): string {
   output += `**Total Issues**: ${summary.total}\n\n`;
 
   if (summary.total === 0) {
-    output += "✅ No issues found!\n";
+    output += '✅ No issues found!\n';
     return output;
   }
 
@@ -82,9 +82,7 @@ export function formatBatchAnalysisResult(result: BatchAnalysisResult): string {
   output += `\n`;
 
   // Only show files with issues, sorted by issue count descending
-  const filesWithIssues = files
-    .filter(f => f.issueCount > 0)
-    .sort((a, b) => b.issueCount - a.issueCount);
+  const filesWithIssues = files.filter((f) => f.issueCount > 0).sort((a, b) => b.issueCount - a.issueCount);
 
   for (const file of filesWithIssues) {
     output += `### ${file.filePath} (${file.issueCount} issue${file.issueCount > 1 ? 's' : ''})\n\n`;

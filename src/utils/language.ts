@@ -2,7 +2,7 @@
  * Language detection and mapping utilities
  */
 
-import { extname } from "path";
+import { extname } from 'path';
 
 /**
  * Detect language from file extension
@@ -31,16 +31,16 @@ export function detectLanguage(filePath: string): string {
  */
 export function languageToEnum(language: string): string {
   const enumMap: Record<string, string> = {
-    'javascript': 'JS',
-    'typescript': 'TS',
-    'python': 'PYTHON',
-    'java': 'JAVA',
-    'go': 'GO',
-    'php': 'PHP',
-    'ruby': 'RUBY',
-    'html': 'HTML',
-    'css': 'CSS',
-    'xml': 'XML',
+    javascript: 'JS',
+    typescript: 'TS',
+    python: 'PYTHON',
+    java: 'JAVA',
+    go: 'GO',
+    php: 'PHP',
+    ruby: 'RUBY',
+    html: 'HTML',
+    css: 'CSS',
+    xml: 'XML',
   };
   return enumMap[language] || language.toUpperCase();
 }

@@ -1,0 +1,82 @@
+{
+  "rules": {
+    "javascript:S3776": {
+      "level": "on",
+      "parameters": {
+        "threshold": "20"
+      }
+    },
+    "typescript:S3776": {
+      "level": "on",
+      "parameters": {
+        "threshold": "25"
+      }
+    },
+    "python:S3776": {
+      "level": "on",
+      "parameters": {
+        "threshold": "20"
+      }
+    },
+    "java:S3776": {
+      "level": "on",
+      "parameters": {
+        "threshold": "20"
+      }
+    },
+    "javascript:S1481": {
+      "level": "off"
+    },
+    "typescript:S1481": {
+      "level": "off"
+    },
+    "javascript:S125": {
+      "level": "off"
+    },
+    "typescript:S125": {
+      "level": "off"
+    },
+    "javascript:S1135": {
+      "level": "off"
+    },
+    "typescript:S1135": {
+      "level": "off"
+    },
+    "javascript:S138": {
+      "level": "on",
+      "parameters": {
+        "max": "100"
+      }
+    },
+    "typescript:S138": {
+      "level": "on",
+      "parameters": {
+        "max": "100"
+      }
+    },
+    "javascript:S107": {
+      "level": "on",
+      "parameters": {
+        "maximumFunctionParameters": "5"
+      }
+    },
+    "typescript:S107": {
+      "level": "on",
+      "parameters": {
+        "maximumFunctionParameters": "5"
+      }
+    },
+    "python:S1192": {
+      "level": "on",
+      "parameters": {
+        "threshold": "5"
+      }
+    },
+    "java:S1192": {
+      "level": "on",
+      "parameters": {
+        "threshold": "5"
+      }
+    }
+  }
+}

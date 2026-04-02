@@ -9,7 +9,7 @@ export class SloopError extends Error {
   constructor(
     message: string,
     public userMessage: string,
-    public recoverable: boolean = false
+    public recoverable: boolean = false,
   ) {
     super(message);
     this.name = 'SloopError';
@@ -20,13 +20,13 @@ export class SloopError extends Error {
  * Handle tool errors and format them for MCP responses
  */
 export function handleToolError(error: unknown) {
-  console.error("[MCP] Error handling tool call:", error);
+  console.error('[MCP] Error handling tool call:', error);
 
   if (error instanceof SloopError) {
     return {
       content: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: `❌ **Error**: ${error.userMessage}`,
         },
       ],
@@ -42,7 +42,7 @@ export function handleToolError(error: unknown) {
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text: `❌ **Error**: ${errorMessage}`,
       },
     ],

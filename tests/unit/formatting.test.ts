@@ -9,12 +9,27 @@ describe('formatBatchAnalysisResult', () => {
         { filePath: '/clean1.ts', language: 'typescript', issueCount: 0, issues: [] },
         { filePath: '/clean2.ts', language: 'typescript', issueCount: 0, issues: [] },
         {
-          filePath: '/dirty.ts', language: 'typescript', issueCount: 1,
-          issues: [{ line: 10, column: 0, endLine: 10, endColumn: 5, severity: 'MAJOR', rule: 'typescript:S3776', ruleDescription: '', message: 'Cognitive Complexity too high' }],
+          filePath: '/dirty.ts',
+          language: 'typescript',
+          issueCount: 1,
+          issues: [
+            {
+              line: 10,
+              column: 0,
+              endLine: 10,
+              endColumn: 5,
+              severity: 'MAJOR',
+              rule: 'typescript:S3776',
+              ruleDescription: '',
+              message: 'Cognitive Complexity too high',
+            },
+          ],
         },
       ],
       summary: {
-        totalFiles: 3, totalIssues: 1, filesWithIssues: 1,
+        totalFiles: 3,
+        totalIssues: 1,
+        filesWithIssues: 1,
         bySeverity: { blocker: 0, critical: 0, major: 1, minor: 0, info: 0 },
       },
     };
@@ -33,11 +48,11 @@ describe('formatBatchAnalysisResult', () => {
 
   it('should show only summary when no issues found', () => {
     const result: BatchAnalysisResult = {
-      files: [
-        { filePath: '/a.ts', language: 'typescript', issueCount: 0, issues: [] },
-      ],
+      files: [{ filePath: '/a.ts', language: 'typescript', issueCount: 0, issues: [] }],
       summary: {
-        totalFiles: 1, totalIssues: 0, filesWithIssues: 0,
+        totalFiles: 1,
+        totalIssues: 0,
+        filesWithIssues: 0,
         bySeverity: { blocker: 0, critical: 0, major: 0, minor: 0, info: 0 },
       },
     };
@@ -51,15 +66,37 @@ describe('formatBatchAnalysisResult', () => {
     const result: BatchAnalysisResult = {
       files: [
         {
-          filePath: '/file.ts', language: 'typescript', issueCount: 2,
+          filePath: '/file.ts',
+          language: 'typescript',
+          issueCount: 2,
           issues: [
-            { line: 5, column: 0, endLine: 5, endColumn: 10, severity: 'MAJOR', rule: 'typescript:S107', ruleDescription: '', message: 'Too many params' },
-            { line: 20, column: 0, endLine: 20, endColumn: 10, severity: 'MINOR', rule: 'typescript:S1481', ruleDescription: '', message: 'Unused variable' },
+            {
+              line: 5,
+              column: 0,
+              endLine: 5,
+              endColumn: 10,
+              severity: 'MAJOR',
+              rule: 'typescript:S107',
+              ruleDescription: '',
+              message: 'Too many params',
+            },
+            {
+              line: 20,
+              column: 0,
+              endLine: 20,
+              endColumn: 10,
+              severity: 'MINOR',
+              rule: 'typescript:S1481',
+              ruleDescription: '',
+              message: 'Unused variable',
+            },
           ],
         },
       ],
       summary: {
-        totalFiles: 1, totalIssues: 2, filesWithIssues: 1,
+        totalFiles: 1,
+        totalIssues: 2,
+        filesWithIssues: 1,
         bySeverity: { blocker: 0, critical: 0, major: 1, minor: 1, info: 0 },
       },
     };
@@ -73,20 +110,64 @@ describe('formatBatchAnalysisResult', () => {
     const result: BatchAnalysisResult = {
       files: [
         {
-          filePath: '/few.ts', language: 'typescript', issueCount: 1,
-          issues: [{ line: 1, column: 0, endLine: 1, endColumn: 5, severity: 'MINOR', rule: 'r:1', ruleDescription: '', message: 'x' }],
+          filePath: '/few.ts',
+          language: 'typescript',
+          issueCount: 1,
+          issues: [
+            {
+              line: 1,
+              column: 0,
+              endLine: 1,
+              endColumn: 5,
+              severity: 'MINOR',
+              rule: 'r:1',
+              ruleDescription: '',
+              message: 'x',
+            },
+          ],
         },
         {
-          filePath: '/many.ts', language: 'typescript', issueCount: 3,
+          filePath: '/many.ts',
+          language: 'typescript',
+          issueCount: 3,
           issues: [
-            { line: 1, column: 0, endLine: 1, endColumn: 5, severity: 'MAJOR', rule: 'r:1', ruleDescription: '', message: 'a' },
-            { line: 2, column: 0, endLine: 2, endColumn: 5, severity: 'MAJOR', rule: 'r:2', ruleDescription: '', message: 'b' },
-            { line: 3, column: 0, endLine: 3, endColumn: 5, severity: 'MAJOR', rule: 'r:3', ruleDescription: '', message: 'c' },
+            {
+              line: 1,
+              column: 0,
+              endLine: 1,
+              endColumn: 5,
+              severity: 'MAJOR',
+              rule: 'r:1',
+              ruleDescription: '',
+              message: 'a',
+            },
+            {
+              line: 2,
+              column: 0,
+              endLine: 2,
+              endColumn: 5,
+              severity: 'MAJOR',
+              rule: 'r:2',
+              ruleDescription: '',
+              message: 'b',
+            },
+            {
+              line: 3,
+              column: 0,
+              endLine: 3,
+              endColumn: 5,
+              severity: 'MAJOR',
+              rule: 'r:3',
+              ruleDescription: '',
+              message: 'c',
+            },
           ],
         },
       ],
       summary: {
-        totalFiles: 2, totalIssues: 4, filesWithIssues: 2,
+        totalFiles: 2,
+        totalIssues: 4,
+        filesWithIssues: 2,
         bySeverity: { blocker: 0, critical: 0, major: 3, minor: 1, info: 0 },
       },
     };

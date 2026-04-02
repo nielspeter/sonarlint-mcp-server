@@ -1,20 +1,20 @@
-import { existsSync } from "fs";
-import { extname } from "path";
-import { SloopError } from "../errors.js";
-import { ensureSloopBridge } from "../utils/sloop.js";
-import { getOrCreateScope } from "../utils/scope.js";
-import { detectLanguage } from "../utils/language.js";
-import { filterBySeverity } from "../utils/quick-fix.js";
-import { transformSloopIssues, createSummary } from "../utils/transforms.js";
-import { formatAnalysisResult } from "../utils/formatting.js";
-import { sessionResults } from "../state.js";
-import type { AnalysisResult } from "../types.js";
+import { existsSync } from 'fs';
+import { extname } from 'path';
+import { SloopError } from '../errors.js';
+import { ensureSloopBridge } from '../utils/sloop.js';
+import { getOrCreateScope } from '../utils/scope.js';
+import { detectLanguage } from '../utils/language.js';
+import { filterBySeverity } from '../utils/quick-fix.js';
+import { transformSloopIssues, createSummary } from '../utils/transforms.js';
+import { formatAnalysisResult } from '../utils/formatting.js';
+import { sessionResults } from '../state.js';
+import type { AnalysisResult } from '../types.js';
 
 export async function handleAnalyzeFile(args: any) {
   const { filePath, minSeverity, excludeRules } = args as {
     filePath: string;
     minSeverity?: string;
-    excludeRules?: string[]
+    excludeRules?: string[];
   };
 
   // Validate file exists
@@ -22,7 +22,7 @@ export async function handleAnalyzeFile(args: any) {
     throw new SloopError(
       `File not found: ${filePath}`,
       `The file ${filePath} does not exist. Please check the path and try again.`,
-      false
+      false,
     );
   }
 
@@ -33,12 +33,12 @@ export async function handleAnalyzeFile(args: any) {
     throw new SloopError(
       `Unknown language for ${filePath}`,
       `No analyzer available for ${ext} files. Supported extensions: .js, .jsx, .ts, .tsx, .py, .java, .go, .php, .rb, .html, .css, .xml`,
-      false
+      false,
     );
   }
 
   // Ensure SLOOP is initialized
-  const bridge = await ensureSloopBridge();
+  const bridge = await ensureSloopBridge(filePath);
 
   // Get or create scope
   const scopeId = await getOrCreateScope(filePath);
@@ -52,8 +52,10 @@ export async function handleAnalyzeFile(args: any) {
   console.error(`[MCP] analyzeFilesAndTrack returned`);
 
   // Extract issues: prefer raisedIssues (from notifications) over rawIssues (from response)
-  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
-  console.error(`[MCP] Found ${rawIssues.length} issues (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`);
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
+  console.error(
+    `[MCP] Found ${rawIssues.length} issues (source: ${rawResult.raisedIssues?.length ? 'raiseIssues notification' : 'response'})`,
+  );
 
   // Transform to simplified format
   let issues = transformSloopIssues(rawIssues);
@@ -63,9 +65,7 @@ export async function handleAnalyzeFile(args: any) {
   }
 
   if (excludeRules && excludeRules.length > 0) {
-    issues = issues.filter(issue =>
-      !excludeRules.includes(issue.rule)
-    );
+    issues = issues.filter((issue) => !excludeRules.includes(issue.rule));
   }
 
   // Create result
@@ -85,7 +85,7 @@ export async function handleAnalyzeFile(args: any) {
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text: formattedResult,
       },
     ],

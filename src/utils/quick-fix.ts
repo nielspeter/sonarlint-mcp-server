@@ -35,16 +35,17 @@ export function applyTextEdits(lines: string[], quickFix: any): void {
 }
 
 const SEVERITY_ORDER: Record<string, number> = {
-  INFO: 0, MINOR: 1, MAJOR: 2, CRITICAL: 3, BLOCKER: 4
+  INFO: 0,
+  MINOR: 1,
+  MAJOR: 2,
+  CRITICAL: 3,
+  BLOCKER: 4,
 };
 
 /**
  * Filter issues by minimum severity level.
  */
-export function filterBySeverity<T extends { severity: string }>(
-  issues: T[],
-  minSeverity: string,
-): T[] {
+export function filterBySeverity<T extends { severity: string }>(issues: T[], minSeverity: string): T[] {
   const minLevel = SEVERITY_ORDER[minSeverity] ?? 0;
-  return issues.filter(issue => (SEVERITY_ORDER[issue.severity] ?? 0) >= minLevel);
+  return issues.filter((issue) => (SEVERITY_ORDER[issue.severity] ?? 0) >= minLevel);
 }

@@ -1,25 +1,25 @@
-import { existsSync, readdirSync, readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
-import { sessionResults, batchResults, getSloopBridge, serverStartTime } from "../state.js";
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { sessionResults, batchResults, getSloopBridge, serverStartTime } from '../state.js';
 
 // Get package root directory (where sonarlint-backend is installed)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PACKAGE_ROOT = join(__dirname, '..', '..');  // Go up from dist/tools/ to package root
+const PACKAGE_ROOT = join(__dirname, '..', '..'); // Go up from dist/tools/ to package root
 
 function getHealthStatus(pluginsExist: boolean): string {
-  if (!pluginsExist) return "degraded";
-  return getSloopBridge() ? "healthy" : "ready";
+  if (!pluginsExist) return 'degraded';
+  return getSloopBridge() ? 'healthy' : 'ready';
 }
 
 // Read version from package.json
 function getPackageVersion(): string {
   try {
-    const packageJson = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf-8"));
+    const packageJson = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf-8'));
     return packageJson.version;
   } catch {
-    return "unknown";
+    return 'unknown';
   }
 }
 
@@ -35,16 +35,16 @@ export async function handleHealthCheck() {
   const memoryMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
 
   // Check SLOOP status - reflect actual backend state
-  const sloopStatus = getSloopBridge() ? "running" : "not started (starts on first analysis)";
+  const sloopStatus = getSloopBridge() ? 'running' : 'not started (starts on first analysis)';
 
   // Get plugin information
-  const pluginsDir = join(PACKAGE_ROOT, "sonarlint-backend", "plugins");
+  const pluginsDir = join(PACKAGE_ROOT, 'sonarlint-backend', 'plugins');
   const pluginsExist = existsSync(pluginsDir);
 
-  let plugins = [];
+  const plugins = [];
   if (pluginsExist) {
     const files = readdirSync(pluginsDir);
-    const jarFiles = files.filter(f => f.endsWith('.jar'));
+    const jarFiles = files.filter((f) => f.endsWith('.jar'));
 
     for (const jarFile of jarFiles) {
       // Parse plugin name and version from filename
@@ -53,7 +53,7 @@ export async function handleHealthCheck() {
         plugins.push({
           name: match[1].charAt(0).toUpperCase() + match[1].slice(1),
           version: match[2],
-          status: "active",
+          status: 'active',
         });
       }
     }
@@ -77,7 +77,7 @@ export async function handleHealthCheck() {
     },
     backend: {
       status: sloopStatus,
-      pluginsDirectory: pluginsExist ? "found" : "missing",
+      pluginsDirectory: pluginsExist ? 'found' : 'missing',
     },
     plugins,
     memory: {
@@ -86,20 +86,20 @@ export async function handleHealthCheck() {
       rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
     },
     cache: cacheStats,
-    tools: ["check_quality", "check_files", "check_code", "list_rules", "fix_issue", "fix_all_issues", "health_check"],
+    tools: ['check_quality', 'check_files', 'check_code', 'list_rules', 'fix_issue', 'fix_all_issues', 'health_check'],
     features: [
-      "Session storage for multi-turn conversations",
-      "Batch analysis",
-      "Content analysis (unsaved files)",
-      "MCP resources",
-      "Quick fixes support",
+      'Session storage for multi-turn conversations',
+      'Batch analysis',
+      'Content analysis (unsaved files)',
+      'MCP resources',
+      'Quick fixes support',
     ],
   };
 
   let output = `# SonarLint MCP Server Health Check\n\n`;
-  let statusEmoji = "⚠️ Degraded";
-  if (healthStatus.status === "healthy") statusEmoji = "✅ Healthy";
-  else if (healthStatus.status === "ready") statusEmoji = "🟡 Ready";
+  let statusEmoji = '⚠️ Degraded';
+  if (healthStatus.status === 'healthy') statusEmoji = '✅ Healthy';
+  else if (healthStatus.status === 'ready') statusEmoji = '🟡 Ready';
   output += `**Status**: ${statusEmoji}\n`;
   output += `**Version**: ${healthStatus.version}\n`;
   output += `**Uptime**: ${healthStatus.uptime.formatted}\n\n`;
@@ -139,7 +139,7 @@ export async function handleHealthCheck() {
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text: output,
       },
     ],

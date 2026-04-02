@@ -13,19 +13,24 @@ interface SloopConfig {
   storageRoot?: string;
   workDir?: string;
   autoInitialize?: boolean;
+  standaloneRuleConfig?: Record<string, { isActive: boolean; paramValueByKey: Record<string, string> }>;
 }
 
 export class SloopBridge extends EventEmitter {
   private process: ChildProcess | null = null;
   private connected = false;
   private messageId = 0;
-  private readonly pendingRequests = new Map<string, {
-    resolve: (value: any) => void;
-    reject: (reason: any) => void;
-    timeout: NodeJS.Timeout;
-  }>();
+  private readonly pendingRequests = new Map<
+    string,
+    {
+      resolve: (value: any) => void;
+      reject: (reason: any) => void;
+      timeout: NodeJS.Timeout;
+    }
+  >();
   private messageBuffer = '';
-  private readonly config: Required<Omit<SloopConfig, 'autoInitialize'>> & Pick<SloopConfig, 'autoInitialize'>;
+  private readonly config: Required<Omit<SloopConfig, 'autoInitialize' | 'standaloneRuleConfig'>> &
+    Pick<SloopConfig, 'autoInitialize' | 'standaloneRuleConfig'>;
   private readonly projectRoot: string;
   private readonly issueCollector = new IssueCollector();
 
@@ -43,10 +48,11 @@ export class SloopBridge extends EventEmitter {
       storageRoot: config.storageRoot || join(cacheDir, 'storage'),
       workDir: config.workDir || join(cacheDir, 'work'),
       autoInitialize: config.autoInitialize,
+      standaloneRuleConfig: config.standaloneRuleConfig,
     };
 
     // Ensure directories exist
-    [this.config.storageRoot, this.config.workDir].forEach(dir => {
+    [this.config.storageRoot, this.config.workDir].forEach((dir) => {
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
@@ -67,7 +73,7 @@ export class SloopBridge extends EventEmitter {
     const path = join(this.projectRoot, 'sonarlint-backend/lib');
     if (!existsSync(path)) {
       throw new Error(
-        `SLOOP library not found at ${path}. Run './download-plugins.sh' to download Maven Central artifacts.`
+        `SLOOP library not found at ${path}. Run './download-plugins.sh' to download Maven Central artifacts.`,
       );
     }
     return path;
@@ -85,26 +91,30 @@ export class SloopBridge extends EventEmitter {
         const nodeDir = process.execPath.substring(0, process.execPath.lastIndexOf('/'));
         const currentPath = process.env.PATH || '';
 
-        this.process = spawn(this.config.javaPath, [
-          '-Xms384m',
-          // Note: WebStorm doesn't use -Xmx, omitting it
-          '-XX:+UseG1GC',
-          '-XX:MaxHeapFreeRatio=20',
-          '-XX:MinHeapFreeRatio=10',
-          '-XX:+UseStringDeduplication',
-          '-XX:MaxGCPauseMillis=50',
-          '-XX:ParallelGCThreads=2',
-          '-Djava.awt.headless=true',
-          '-classpath',
-          `${this.config.sloopLibPath}/*`,
-          'org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli'
-        ], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: {
-            ...process.env,
-            PATH: `${nodeDir}:${currentPath}`  // Prepend Node directory to PATH
-          }
-        });
+        this.process = spawn(
+          this.config.javaPath,
+          [
+            '-Xms384m',
+            // Note: WebStorm doesn't use -Xmx, omitting it
+            '-XX:+UseG1GC',
+            '-XX:MaxHeapFreeRatio=20',
+            '-XX:MinHeapFreeRatio=10',
+            '-XX:+UseStringDeduplication',
+            '-XX:MaxGCPauseMillis=50',
+            '-XX:ParallelGCThreads=2',
+            '-Djava.awt.headless=true',
+            '-classpath',
+            `${this.config.sloopLibPath}/*`,
+            'org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli',
+          ],
+          {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: {
+              ...process.env,
+              PATH: `${nodeDir}:${currentPath}`, // Prepend Node directory to PATH
+            },
+          },
+        );
 
         this.process.on('error', (error) => {
           reject(error);
@@ -138,7 +148,6 @@ export class SloopBridge extends EventEmitter {
         } else {
           resolve();
         }
-
       } catch (error) {
         reject(error);
       }
@@ -155,7 +164,8 @@ export class SloopBridge extends EventEmitter {
 
     this.process.stderr!.on('data', (data: Buffer) => {
       const msg = data.toString();
-      if (!msg.includes('SLF4J')) { // Filter out common logging noise
+      if (!msg.includes('SLF4J')) {
+        // Filter out common logging noise
         console.error('SLOOP stderr:', msg);
       }
     });
@@ -293,13 +303,7 @@ export class SloopBridge extends EventEmitter {
     if (request.method === 'getFileExclusions') {
       // Return standard exclusions (node_modules, .git, etc.)
       this.sendResponse(request.id, {
-        fileExclusionPatterns: [
-          'node_modules/**',
-          '.git/**',
-          'dist/**',
-          'build/**',
-          '**/*.min.js'
-        ]
+        fileExclusionPatterns: ['node_modules/**', '.git/**', 'dist/**', 'build/**', '**/*.min.js'],
       });
       return;
     }
@@ -322,7 +326,7 @@ export class SloopBridge extends EventEmitter {
     const message = {
       jsonrpc: '2.0',
       id,
-      result
+      result,
     };
 
     const json = JSON.stringify(message);
@@ -342,7 +346,7 @@ export class SloopBridge extends EventEmitter {
       jsonrpc: '2.0',
       id,
       method,
-      params
+      params,
     };
 
     // Debug logging for analysis calls
@@ -360,8 +364,8 @@ export class SloopBridge extends EventEmitter {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id);
-        console.error(`[DEBUG] Request ${id} timed out after ${timeoutMs/1000}s: ${method}`);
-        reject(new Error(`Request timeout after ${timeoutMs/1000}s: ${method}`));
+        console.error(`[DEBUG] Request ${id} timed out after ${timeoutMs / 1000}s: ${method}`);
+        reject(new Error(`Request timeout after ${timeoutMs / 1000}s: ${method}`));
       }, timeoutMs);
 
       this.pendingRequests.set(id, { resolve, reject, timeout });
@@ -381,7 +385,7 @@ export class SloopBridge extends EventEmitter {
     const message = {
       jsonrpc: '2.0',
       method,
-      params
+      params,
     };
 
     const json = JSON.stringify(message);
@@ -406,9 +410,7 @@ export class SloopBridge extends EventEmitter {
 
     const files = readdirSync(pluginDir);
 
-    return files
-      .filter((f: string) => f.endsWith('.jar'))
-      .map((f: string) => join(pluginDir, f));
+    return files.filter((f: string) => f.endsWith('.jar')).map((f: string) => join(pluginDir, f));
   }
 
   private async initialize(): Promise<void> {
@@ -419,20 +421,20 @@ export class SloopBridge extends EventEmitter {
     console.error(`Initializing SLOOP with ${pluginPaths.length} plugins from Maven Central`);
 
     // Find node executable - use the one running this process
-    const nodePath = process.execPath;  // This will be the Node.js binary running the current process
+    const nodePath = process.execPath; // This will be the Node.js binary running the current process
     console.error(`Using Node.js: ${nodePath}`);
 
     const params = {
       clientConstantInfo: {
         name: 'SonarLint MCP Server',
-        userAgent: 'sonarlint-mcp/1.0'
+        userAgent: 'sonarlint-mcp/1.0',
       },
       telemetryConstantAttributes: {
         productKey: 'mcp',
         productName: 'SonarLint MCP Server',
         productVersion: '1.0.0',
         ideVersion: '1.0.0',
-        additionalAttributes: {}
+        additionalAttributes: {},
       },
       httpConfiguration: {
         sslConfiguration: {
@@ -441,12 +443,12 @@ export class SloopBridge extends EventEmitter {
           trustStoreType: null,
           keyStorePath: null,
           keyStorePassword: null,
-          keyStoreType: null
+          keyStoreType: null,
         },
         connectTimeout: 'PT30S',
         socketTimeout: 'PT1M',
         connectionRequestTimeout: 'PT30S',
-        responseTimeout: 'PT1M'
+        responseTimeout: 'PT1M',
       },
       alternativeSonarCloudEnvironment: null,
       backendCapabilities: ['DATAFLOW_BUG_DETECTION', 'SECURITY_HOTSPOTS'],
@@ -459,7 +461,7 @@ export class SloopBridge extends EventEmitter {
         isEnabledDataflowBugDetection: true,
         shouldManageFullSynchronization: false,
         isEnabledTelemetry: false,
-        isEnabledMonitoring: false
+        isEnabledMonitoring: false,
       },
       storageRoot: this.config.storageRoot,
       workDir: this.config.workDir,
@@ -471,12 +473,12 @@ export class SloopBridge extends EventEmitter {
       sonarQubeConnections: [],
       sonarCloudConnections: [],
       sonarlintUserHome: join(tmpdir(), 'sonarlint-mcp'),
-      standaloneRuleConfigByKey: {},
+      standaloneRuleConfigByKey: this.config.standaloneRuleConfig ?? {},
       isFocusOnNewCode: false,
       languageSpecificRequirements: {
         jsTsRequirements: {
-          clientNodeJsPath: nodePath,  // Explicit Node path
-          bundlePath: join(pluginDir, 'eslint-bridge')  // SLOOP appends /package/bin/server.cjs
+          clientNodeJsPath: nodePath, // Explicit Node path
+          bundlePath: join(pluginDir, 'eslint-bridge'), // SLOOP appends /package/bin/server.cjs
         },
         // Also set in standalone requirements
         nodeJsPath: nodePath,
@@ -485,11 +487,11 @@ export class SloopBridge extends EventEmitter {
           dotNet6DistributionPath: null,
           dotNet472DistributionPath: null,
           ossAnalyzerPath: null,
-          enterpriseAnalyzerPath: null
-        }
+          enterpriseAnalyzerPath: null,
+        },
       },
       isAutomaticAnalysisEnabled: true,
-      telemetryMigration: null
+      telemetryMigration: null,
     };
 
     await this.sendRequest('initialize', params);
@@ -527,7 +529,17 @@ export class SloopBridge extends EventEmitter {
    * Returns a map of rule key -> rule definition.
    */
   async listAllStandaloneRulesDefinitions(): Promise<any> {
-    return this.sendRequest('rules/listAllStandaloneRulesDefinitions');
+    return this.sendRequest('rule/listAllStandaloneRulesDefinitions', {});
+  }
+
+  async getStandaloneRuleDetails(ruleKey: string): Promise<any> {
+    return this.sendRequest('rule/getStandaloneRuleDetails', { ruleKey });
+  }
+
+  async updateStandaloneRulesConfiguration(
+    ruleConfigByKey: Record<string, { isActive: boolean; paramValueByKey: Record<string, string> }>,
+  ): Promise<void> {
+    this.sendNotification('rule/updateStandaloneRulesConfiguration', { ruleConfigByKey });
   }
 
   /**
@@ -553,23 +565,25 @@ export class SloopBridge extends EventEmitter {
     });
   }
 
-  addConfigurationScope(scopeId: string, params: { name?: string, parentId?: string } = {}): void {
+  addConfigurationScope(scopeId: string, params: { name?: string; parentId?: string } = {}): void {
     this.sendNotification('configuration/didAddConfigurationScopes', {
-      addedScopes: [{
-        id: scopeId,
-        parentId: params.parentId || null,
-        bindable: false,
-        name: params.name || scopeId,
-        binding: null
-      }]
+      addedScopes: [
+        {
+          id: scopeId,
+          parentId: params.parentId || null,
+          bindable: false,
+          name: params.name || scopeId,
+          binding: null,
+        },
+      ],
     });
   }
 
   async analyzeFilesAndTrack(configScopeId: string, filePaths: string[]): Promise<any> {
     // Generate a random UUID for this analysis
     const analysisId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
 
@@ -597,11 +611,11 @@ export class SloopBridge extends EventEmitter {
 
     try {
       const result = await this.sendRequest('analysis/analyzeFilesAndTrack', {
-        configurationScopeId: configScopeId,  // Note: different field name than analyzeFileList!
+        configurationScopeId: configScopeId, // Note: different field name than analyzeFileList!
         analysisId: analysisId,
-        filesToAnalyze: filePaths.map(path => `file://${path}`),
+        filesToAnalyze: filePaths.map((path) => `file://${path}`),
         extraProperties: {},
-        shouldFetchServerIssues: false
+        shouldFetchServerIssues: false,
       });
 
       const elapsed = Date.now() - startTime;
@@ -624,5 +638,4 @@ export class SloopBridge extends EventEmitter {
       throw error;
     }
   }
-
 }

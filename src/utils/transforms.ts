@@ -2,7 +2,7 @@
  * Data transformation utilities
  */
 
-import type { AnalysisIssue } from "../types.js";
+import type { AnalysisIssue } from '../types.js';
 
 /**
  * Transform raw SLOOP issues to simplified format
@@ -18,7 +18,8 @@ export function transformSloopIssues(rawIssues: any[]): AnalysisIssue[] {
       line: issue.textRange?.startLine || issue.startLine || 1,
       column: issue.textRange?.startLineOffset || issue.startColumn || 0,
       endLine: issue.textRange?.endLine || issue.endLine || issue.textRange?.startLine || issue.startLine || 1,
-      endColumn: issue.textRange?.endLineOffset || issue.endColumn || issue.textRange?.startLineOffset || issue.startColumn || 0,
+      endColumn:
+        issue.textRange?.endLineOffset || issue.endColumn || issue.textRange?.startLineOffset || issue.startColumn || 0,
       severity: issue.severity || 'MAJOR',
       rule: issue.ruleKey || 'unknown',
       ruleDescription: issue.ruleDescriptionContextKey || '',
@@ -38,7 +39,7 @@ export function transformSloopIssues(rawIssues: any[]): AnalysisIssue[] {
             endLine: edit.range?.endLine || 1,
             endColumn: edit.range?.endLineOffset || 0,
             newText: edit.newText || '',
-          }))
+          })),
         ),
       };
     }

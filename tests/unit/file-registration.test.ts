@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { relative } from 'path';
-import { languageToEnum } from '../../src/utils/language.js';
 import { buildClientFileDtos } from '../../src/utils/file-registration.js';
 
 /**

@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EventEmitter } from 'events';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 /**
  * Tests for raiseIssues notification handling in SloopBridge.
@@ -119,16 +118,12 @@ describe('SloopBridge raiseIssues handling', () => {
 
       // First notification (intermediate)
       collector.addIssues('test-analysis-123', {
-        'file:///path/to/a.ts': [
-          { ruleKey: 'typescript:S1', primaryMessage: 'Issue 1', severity: 'MAJOR' },
-        ],
+        'file:///path/to/a.ts': [{ ruleKey: 'typescript:S1', primaryMessage: 'Issue 1', severity: 'MAJOR' }],
       });
 
       // Second notification (final)
       collector.addIssues('test-analysis-123', {
-        'file:///path/to/b.ts': [
-          { ruleKey: 'typescript:S2', primaryMessage: 'Issue 2', severity: 'MINOR' },
-        ],
+        'file:///path/to/b.ts': [{ ruleKey: 'typescript:S2', primaryMessage: 'Issue 2', severity: 'MINOR' }],
       });
 
       const issues = collector.getAndClear('test-analysis-123');
@@ -180,12 +175,8 @@ describe('SloopBridge raiseIssues handling', () => {
       const collector = new IssueCollector();
 
       collector.addIssues('test-analysis-123', {
-        'file:///path/to/a.ts': [
-          { ruleKey: 'rule:1', primaryMessage: 'msg', severity: 'MAJOR' },
-        ],
-        'file:///path/to/b.ts': [
-          { ruleKey: 'rule:2', primaryMessage: 'msg', severity: 'MINOR' },
-        ],
+        'file:///path/to/a.ts': [{ ruleKey: 'rule:1', primaryMessage: 'msg', severity: 'MAJOR' }],
+        'file:///path/to/b.ts': [{ ruleKey: 'rule:2', primaryMessage: 'msg', severity: 'MINOR' }],
       });
 
       const issues = collector.getAndClear('test-analysis-123');

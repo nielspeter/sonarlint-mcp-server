@@ -50,14 +50,14 @@ export class MCPTestClient {
       },
       {
         capabilities: {},
-      }
+      },
     );
 
     // Connect client to server
     await this.client.connect(this.transport);
 
     // Wait for server to be ready
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   /**

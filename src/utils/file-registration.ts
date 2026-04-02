@@ -24,14 +24,10 @@ export interface ClientFileDto {
 /**
  * Build ClientFileDto array from file paths for SLOOP VFS registration.
  */
-export function buildClientFileDtos(
-  filePaths: string[],
-  configScopeId: string,
-  projectRoot?: string,
-): ClientFileDto[] {
+export function buildClientFileDtos(filePaths: string[], configScopeId: string, projectRoot?: string): ClientFileDto[] {
   const baseDir = projectRoot || dirname(filePaths[0]);
 
-  return filePaths.map(filePath => {
+  return filePaths.map((filePath) => {
     const content = readFileSync(filePath, 'utf-8');
     const language = detectLanguage(filePath);
     const sloopLanguage = language !== 'unknown' ? languageToEnum(language) : null;

@@ -2,20 +2,21 @@
  * Configuration scope management utilities
  */
 
-import { dirname, join } from "path";
-import { existsSync } from "fs";
-import { createHash } from "crypto";
-import { scopeMap, scopeToProjectRoot, scopeFiles, getSloopBridge } from "../state.js";
-import { buildClientFileDtos } from "./file-registration.js";
+import { dirname, join } from 'path';
+import { existsSync } from 'fs';
+import { createHash } from 'crypto';
+import { scopeMap, scopeToProjectRoot, scopeFiles, getSloopBridge } from '../state.js';
+import { buildClientFileDtos } from './file-registration.js';
 
 /**
  * Find the project root by walking up to find package.json, .git, etc.
  */
-function findProjectRoot(startPath: string): string {
+export function findProjectRoot(startPath: string): string {
   let dir = startPath;
   const markers = ['package.json', '.git', 'pom.xml', 'build.gradle', 'pyproject.toml', 'go.mod'];
 
-  while (dir !== dirname(dir)) { // stop at filesystem root
+  while (dir !== dirname(dir)) {
+    // stop at filesystem root
     for (const marker of markers) {
       if (existsSync(join(dir, marker))) {
         return dir;

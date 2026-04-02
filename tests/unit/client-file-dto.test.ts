@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { join } from 'path';
 
 /**
  * Tests for ClientFileDto construction logic
@@ -31,7 +30,7 @@ function createClientFileDto(
   projectRoot: string,
   configScopeId: string,
   content: string,
-  language: string
+  language: string,
 ): ClientFileDto {
   const relativePath = filePath.replace(projectRoot + '/', '');
 
@@ -44,7 +43,7 @@ function createClientFileDto(
     fsPath: filePath,
     content,
     detectedLanguage: language,
-    isUserDefined: true // CRITICAL: Must be true!
+    isUserDefined: true, // CRITICAL: Must be true!
   };
 }
 
@@ -251,7 +250,7 @@ describe('ClientFileDto construction', () => {
         fsPath: filePath,
         content: fileContent,
         detectedLanguage: 'JS',
-        isUserDefined: true
+        isUserDefined: true,
       });
     });
   });

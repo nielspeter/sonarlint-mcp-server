@@ -8,16 +8,16 @@ import { describe, it, expect } from 'vitest';
  */
 function languageToEnum(language: string): string {
   const enumMap: Record<string, string> = {
-    'javascript': 'JS',
-    'typescript': 'TS',
-    'python': 'PYTHON',
-    'java': 'JAVA',
-    'go': 'GO',
-    'php': 'PHP',
-    'ruby': 'RUBY',
-    'html': 'HTML',
-    'css': 'CSS',
-    'xml': 'XML',
+    javascript: 'JS',
+    typescript: 'TS',
+    python: 'PYTHON',
+    java: 'JAVA',
+    go: 'GO',
+    php: 'PHP',
+    ruby: 'RUBY',
+    html: 'HTML',
+    css: 'CSS',
+    xml: 'XML',
   };
   return enumMap[language] || language.toUpperCase();
 }

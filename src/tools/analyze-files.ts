@@ -1,19 +1,19 @@
-import { existsSync } from "fs";
-import { createRequire } from "module";
-import { resolve } from "path";
+import { existsSync } from 'fs';
+import { createRequire } from 'module';
+import { resolve } from 'path';
 
 // globSync is available in Node 22+ but @types/node doesn't export it yet
 const require = createRequire(import.meta.url);
-const { globSync } = require("fs") as { globSync: (pattern: string, options?: { cwd?: string }) => string[] };
-import { SloopError } from "../errors.js";
-import { ensureSloopBridge } from "../utils/sloop.js";
-import { getOrCreateScope } from "../utils/scope.js";
-import { detectLanguage } from "../utils/language.js";
-import { transformSloopIssues } from "../utils/transforms.js";
-import { formatBatchAnalysisResult } from "../utils/formatting.js";
-import { filterBySeverity } from "../utils/quick-fix.js";
-import { batchResults } from "../state.js";
-import type { AnalysisIssue, BatchAnalysisResult } from "../types.js";
+const { globSync } = require('fs') as { globSync: (pattern: string, options?: { cwd?: string }) => string[] };
+import { SloopError } from '../errors.js';
+import { ensureSloopBridge } from '../utils/sloop.js';
+import { getOrCreateScope } from '../utils/scope.js';
+import { detectLanguage } from '../utils/language.js';
+import { transformSloopIssues } from '../utils/transforms.js';
+import { formatBatchAnalysisResult } from '../utils/formatting.js';
+import { filterBySeverity } from '../utils/quick-fix.js';
+import { batchResults } from '../state.js';
+import type { AnalysisIssue, BatchAnalysisResult } from '../types.js';
 
 /**
  * Expand glob patterns and resolve relative paths against basePath.
@@ -27,7 +27,7 @@ function expandGlobs(paths: string[], basePath?: string): string[] {
       throw new SloopError(
         `Relative path requires basePath: ${p}`,
         `Relative paths need a basePath to resolve against. Provide basePath (the project root) or use absolute paths.`,
-        false
+        false,
       );
     }
 
@@ -54,18 +54,18 @@ function resolveAndValidatePaths(rawPaths: string[], basePath?: string): string[
 
   if (filePaths.length === 0) {
     throw new SloopError(
-      "No files matched",
-      "No files matched the provided patterns:\n" + rawPaths.map(p => `- ${p}`).join('\n'),
-      false
+      'No files matched',
+      'No files matched the provided patterns:\n' + rawPaths.map((p) => `- ${p}`).join('\n'),
+      false,
     );
   }
 
-  const missingFiles = filePaths.filter(fp => !existsSync(fp));
+  const missingFiles = filePaths.filter((fp) => !existsSync(fp));
   if (missingFiles.length > 0) {
     throw new SloopError(
       `Files not found: ${missingFiles.join(', ')}`,
-      "The following files do not exist:\n" + missingFiles.map(f => `- ${f}`).join('\n'),
-      false
+      'The following files do not exist:\n' + missingFiles.map((f) => `- ${f}`).join('\n'),
+      false,
     );
   }
 
@@ -97,32 +97,37 @@ function buildSummary(allResults: FileResult[]): BatchAnalysisResult['summary'] 
   return {
     totalFiles: allResults.length,
     totalIssues: allResults.reduce((sum, r) => sum + r.issueCount, 0),
-    filesWithIssues: allResults.filter(r => r.issueCount > 0).length,
+    filesWithIssues: allResults.filter((r) => r.issueCount > 0).length,
     bySeverity,
   };
 }
 
 export async function handleAnalyzeFiles(args: any) {
-  const { filePaths: rawPaths, basePath, minSeverity, excludeRules } = args as {
+  const {
+    filePaths: rawPaths,
+    basePath,
+    minSeverity,
+    excludeRules,
+  } = args as {
     filePaths: string[];
     basePath?: string;
     groupByFile?: boolean;
     minSeverity?: string;
-    excludeRules?: string[]
+    excludeRules?: string[];
   };
 
   if (!Array.isArray(rawPaths) || rawPaths.length === 0) {
     throw new SloopError(
-      "No files provided",
-      "Please provide at least one file path or glob pattern to analyze.",
-      false
+      'No files provided',
+      'Please provide at least one file path or glob pattern to analyze.',
+      false,
     );
   }
 
   const filePaths = resolveAndValidatePaths(rawPaths, basePath);
   console.error(`[MCP] Batch analyzing ${filePaths.length} files...`);
 
-  const bridge = await ensureSloopBridge();
+  const bridge = await ensureSloopBridge(filePaths[0]);
   const filesByScope = await groupByScope(filePaths);
   const allResults: FileResult[] = [];
 
@@ -130,7 +135,7 @@ export async function handleAnalyzeFiles(args: any) {
     console.error(`[MCP] Analyzing ${scopeFiles.length} files in scope ${scopeId}`);
 
     const rawResult = await bridge.analyzeFilesAndTrack(scopeId, scopeFiles);
-    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : (rawResult.rawIssues || []);
+    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
 
     const issuesByFile = new Map<string, any[]>();
     for (const issue of rawIssues) {
@@ -142,7 +147,7 @@ export async function handleAnalyzeFiles(args: any) {
     for (const filePath of scopeFiles) {
       let issues = transformSloopIssues(issuesByFile.get(`file://${filePath}`) || []);
       if (minSeverity) issues = filterBySeverity(issues, minSeverity);
-      if (excludeRules?.length) issues = issues.filter(i => !excludeRules.includes(i.rule));
+      if (excludeRules?.length) issues = issues.filter((i) => !excludeRules.includes(i.rule));
 
       allResults.push({ filePath, language: detectLanguage(filePath), issueCount: issues.length, issues });
     }
@@ -152,6 +157,6 @@ export async function handleAnalyzeFiles(args: any) {
   batchResults.set(`batch-${Date.now()}`, batchResult);
 
   return {
-    content: [{ type: "text" as const, text: formatBatchAnalysisResult(batchResult) }],
+    content: [{ type: 'text' as const, text: formatBatchAnalysisResult(batchResult) }],
   };
 }

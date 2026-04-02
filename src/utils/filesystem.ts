@@ -2,11 +2,11 @@
  * File system utilities for SLOOP integration
  */
 
-import { dirname, relative } from "path";
-import { readFileSync } from "fs";
-import { scopeMap } from "../state.js";
-import { detectLanguage, languageToEnum } from "./language.js";
-import { ensureSloopBridge } from "./sloop.js";
+import { dirname, relative } from 'path';
+import { readFileSync } from 'fs';
+import { scopeMap } from '../state.js';
+import { detectLanguage, languageToEnum } from './language.js';
+import { ensureSloopBridge } from './sloop.js';
 
 /**
  * Notify SLOOP that file system was updated (proper cache invalidation)
@@ -41,7 +41,7 @@ export async function notifyFileSystemChanged(filePath: string, configScopeId: s
     // Without this, SLOOP ignores changes to "closed" files
     bridge.sendNotification('file/didOpenFile', {
       configurationScopeId: configScopeId,
-      fileUri: uri
+      fileUri: uri,
     });
     console.error(`[FS] Marked file as open: ${filePath}`);
 
@@ -60,14 +60,14 @@ export async function notifyFileSystemChanged(filePath: string, configScopeId: s
       fsPath: filePath, // Provide fsPath for analyzers that need it
       content: fileContent, // Providing content calls setDirty(), which takes precedence over fsPath
       detectedLanguage: languageEnum, // e.g., "JS", "TS", "PYTHON"
-      isUserDefined: true // CRITICAL: Must be true for SLOOP to analyze!
+      isUserDefined: true, // CRITICAL: Must be true for SLOOP to analyze!
     };
 
     // Send file/didUpdateFileSystem notification
     bridge.sendNotification('file/didUpdateFileSystem', {
       addedFiles: [],
       changedFiles: [clientFileDto],
-      removedFiles: []
+      removedFiles: [],
     });
 
     console.error(`[FS] Notified file system update:`);

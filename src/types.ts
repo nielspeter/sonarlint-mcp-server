@@ -7,7 +7,7 @@ export interface AnalysisIssue {
   column: number;
   endLine: number;
   endColumn: number;
-  severity: "INFO" | "MINOR" | "MAJOR" | "CRITICAL" | "BLOCKER";
+  severity: 'INFO' | 'MINOR' | 'MAJOR' | 'CRITICAL' | 'BLOCKER';
   rule: string;
   ruleDescription: string;
   message: string;

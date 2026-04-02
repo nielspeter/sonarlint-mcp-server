@@ -2,8 +2,8 @@
  * Shared state management for the SonarLint MCP Server
  */
 
-import { SloopBridge } from "./sloop-bridge.js";
-import type { AnalysisResult, BatchAnalysisResult } from "./types.js";
+import { SloopBridge } from './sloop-bridge.js';
+import type { AnalysisResult, BatchAnalysisResult } from './types.js';
 
 // Global SLOOP bridge instance (lazy initialized, accessed via getter/setter)
 let sloopBridge: SloopBridge | null = null;
