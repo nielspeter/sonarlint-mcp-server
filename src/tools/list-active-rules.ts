@@ -1,5 +1,17 @@
 import { ensureSloopBridge } from '../utils/sloop.js';
 
+const LANGUAGE_ALIASES: Record<string, string> = {
+  javascript: 'js',
+  typescript: 'ts',
+  python: 'python',
+  java: 'java',
+  go: 'go',
+  php: 'php',
+  ruby: 'ruby',
+  html: 'html',
+  css: 'css',
+};
+
 function formatParams(paramsByKey: Record<string, any> | undefined): string {
   if (!paramsByKey) return '';
   const entries = Object.values(paramsByKey);
@@ -24,7 +36,8 @@ export async function handleListActiveRules(args: any) {
     for (const [key, rule] of Object.entries(rulesByKey)) {
       const ruleDef = rule as any;
       const ruleLang = ruleDef.language?.toLowerCase();
-      if (language && ruleLang !== language.toLowerCase()) {
+      const filterLang = language ? LANGUAGE_ALIASES[language.toLowerCase()] || language.toLowerCase() : undefined;
+      if (filterLang && ruleLang !== filterLang) {
         continue;
       }
       if (!ruleDef.isActiveByDefault) continue;
