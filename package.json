@@ -69,6 +69,7 @@
     "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/inspector": "^0.16.6",
     "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "@vitest/ui": "^4.0.8",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
