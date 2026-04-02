@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.1](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.0...v0.5.1) (2026-04-02)
+
+
+### Bug Fixes
+
+* add .gitattributes to enforce LF on checkout ([19c3497](https://github.com/nielspeter/sonarlint-mcp-server/commit/19c3497b264dccd6de98ce6326373df6952b12f7))
+* map language names to SLOOP codes in list_rules filter ([50af547](https://github.com/nielspeter/sonarlint-mcp-server/commit/50af547aa3955334fc537faa50d5cb751f49ced8))
+* set Prettier endOfLine to lf for Windows CI compatibility ([1882dc2](https://github.com/nielspeter/sonarlint-mcp-server/commit/1882dc2e27dbab5f2581c7f63ee399b626cdc372))
+* skip integration tests on Windows ([e2b6360](https://github.com/nielspeter/sonarlint-mcp-server/commit/e2b6360273c5637cf4edea6ecdc4bea141e27354))
+* update CI to Node 22/24 and add lint/format checks ([c90883d](https://github.com/nielspeter/sonarlint-mcp-server/commit/c90883d03e02cda093826074f995a87f78d3d8d4))
+* use path.join in config tests for Windows compatibility ([2a2748a](https://github.com/nielspeter/sonarlint-mcp-server/commit/2a2748ab4b86a768dd74f2557032ca33b8b8f26a))
+
 ## [0.5.0](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.4.1...v0.5.0) (2026-04-02)
 
 
