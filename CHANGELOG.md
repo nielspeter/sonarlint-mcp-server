@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.4.1...v0.5.0) (2026-04-02)
+
+
+### Features
+
+* add sonarlint.json config file support and ESLint/Prettier setup ([140a885](https://github.com/nielspeter/sonarlint-mcp-server/commit/140a8857e8305c880b82a07f35b93fbd90d46f97))
+
 ### [0.4.1](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.4.0...v0.4.1) (2026-03-30)
 
 
