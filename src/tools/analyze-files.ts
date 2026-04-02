@@ -31,12 +31,13 @@ function expandGlobs(paths: string[], basePath?: string): string[] {
       );
     }
 
+    const resolveBase = basePath ?? process.cwd();
     if (p.includes('*') || p.includes('?')) {
-      const cwd = isRelative ? basePath! : process.cwd();
+      const cwd = isRelative ? resolveBase : process.cwd();
       const matches = globSync(p, { cwd });
       result.push(...matches.map((m: string) => resolve(cwd, m)));
     } else {
-      result.push(isRelative ? resolve(basePath!, p) : p);
+      result.push(isRelative ? resolve(resolveBase, p) : p);
     }
   }
   return [...new Set(result)];
