@@ -3,7 +3,7 @@
 A Model Context Protocol (MCP) server that brings enterprise-grade code analysis to Claude Desktop and other MCP clients using SonarLint's standalone SLOOP backend.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
 
 ## Features
 
@@ -18,7 +18,7 @@ A Model Context Protocol (MCP) server that brings enterprise-grade code analysis
 
 ### Prerequisites
 
-- Node.js 20.0.0 or higher
+- Node.js 22 or higher
 - Claude Desktop (or any MCP client)
 
 ### Installation
@@ -70,6 +70,32 @@ Add to your `claude_desktop_config.json`:
 ```
 
 Restart Claude Desktop to apply changes.
+
+## Rule Configuration
+
+Customize SonarLint rules per project by creating a `sonarlint.json` in your project root:
+
+```json
+{
+  "rules": {
+    "typescript:S3776": {
+      "level": "on",
+      "parameters": {
+        "threshold": "20"
+      }
+    },
+    "javascript:S1481": {
+      "level": "off"
+    }
+  }
+}
+```
+
+- **`level`**: `"on"` (default) or `"off"` to enable/disable a rule
+- **`parameters`**: Override rule thresholds and settings (see [configurable rules](./docs/configurable-rules.md))
+- **Fallback**: If no `sonarlint.json` is found, `.sonarlint/settings.json` is checked (IDE convention)
+
+Copy `sonarlint.example.json` from this repo as a starting point. Use `list_rules` to discover available rules and their configurable parameters.
 
 ## Usage
 
@@ -214,6 +240,7 @@ Tests validate:
 
 - **[SETUP.md](./SETUP.md)** - Detailed installation guide
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/configurable-rules.md](./docs/configurable-rules.md)** - All 84 configurable rules with parameters and defaults
 - **[docs/SLOOP_RPC_PROTOCOL.md](./docs/SLOOP_RPC_PROTOCOL.md)** - Complete RPC protocol documentation
 - **[docs/TESTING.md](./docs/TESTING.md)** - Testing guide
 
@@ -264,7 +291,6 @@ We initially investigated connecting to IDE servers (WebStorm port 64120) but di
 Contributions welcome! Areas for improvement:
 - Additional language support (Java, Go, PHP)
 - Custom rule development
-- Advanced rule configuration
 - Performance optimizations
 - CI/CD integrations
 
