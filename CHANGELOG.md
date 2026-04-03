@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.2](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.1...v0.5.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* apply sonarlint.json config via SLOOP notification ([3b25c28](https://github.com/nielspeter/sonarlint-mcp-server/commit/3b25c2853b456b3cc6b7398408dd5990c6ac22ff))
+* reduce list_rules complexity and remove unnecessary assertions ([be538df](https://github.com/nielspeter/sonarlint-mcp-server/commit/be538df1cf13d557d2fc8a93dc8b0958660746e5))
+
 ### [0.5.1](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.0...v0.5.1) (2026-04-02)
 
 
