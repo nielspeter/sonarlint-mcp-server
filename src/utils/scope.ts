@@ -9,24 +9,34 @@ import { scopeMap, scopeToProjectRoot, scopeFiles, getSloopBridge } from '../sta
 import { buildClientFileDtos } from './file-registration.js';
 
 /**
- * Find the project root by walking up to find package.json, .git, etc.
+ * Find the project root by walking up to find .git, package.json, etc.
+ *
+ * Strategy: walk up from startPath, tracking both the first package.json
+ * and any .git directory. Prefer .git (true repo root) over package.json
+ * (which in monorepos appears in every workspace). This ensures sonarlint.json
+ * at the repo root is found, not a nested workspace's package.json.
  */
 export function findProjectRoot(startPath: string): string {
   let dir = startPath;
-  const markers = ['package.json', '.git', 'pom.xml', 'build.gradle', 'pyproject.toml', 'go.mod'];
+  let firstPackageJson: string | undefined;
+  const vcsMarkers = ['.git', 'pom.xml', 'build.gradle', 'pyproject.toml', 'go.mod'];
 
   while (dir !== dirname(dir)) {
-    // stop at filesystem root
-    for (const marker of markers) {
+    // VCS/build markers are authoritative — return immediately
+    for (const marker of vcsMarkers) {
       if (existsSync(join(dir, marker))) {
         return dir;
       }
     }
+    // Remember first package.json as fallback (may be a workspace, not the root)
+    if (!firstPackageJson && existsSync(join(dir, 'package.json'))) {
+      firstPackageJson = dir;
+    }
     dir = dirname(dir);
   }
 
-  // Fallback: use the original directory
-  return startPath;
+  // No VCS marker found — fall back to first package.json, then original dir
+  return firstPackageJson ?? startPath;
 }
 
 /**
