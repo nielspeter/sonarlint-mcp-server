@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.3](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.2...v0.5.3) (2026-04-03)
+
+
+### Bug Fixes
+
+* prefer .git over package.json in findProjectRoot ([a421881](https://github.com/nielspeter/sonarlint-mcp-server/commit/a4218819a50d8d3109fe636487987f79f4f4d7b6))
+
 ### [0.5.2](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.1...v0.5.2) (2026-04-03)
 
 
