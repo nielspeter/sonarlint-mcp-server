@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.4](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.3...v0.5.4) (2026-04-07)
+
+
+### Bug Fixes
+
+* chunk large file batches and deduplicate scopeFiles ([d5e99bf](https://github.com/nielspeter/sonarlint-mcp-server/commit/d5e99bf16cac0785a8b000cd18ce1c65bf300b47))
+
+
+### Documentation
+
+* add sonarlint.json configuration section to README ([845c733](https://github.com/nielspeter/sonarlint-mcp-server/commit/845c733f57b585fd4ebebbefd692b25b227bf704))
+
 ### [0.5.3](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.2...v0.5.3) (2026-04-03)
 
 
