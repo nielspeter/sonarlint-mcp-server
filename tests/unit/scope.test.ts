@@ -44,7 +44,7 @@ describe('findProjectRoot', () => {
   it('should return first package.json dir if no VCS marker found anywhere', () => {
     mockExistsSync.mockImplementation((p) => String(p) === join('/workspace/app', 'package.json'));
 
-    expect(findProjectRoot('/workspace/app/src/utils')).toBe(join('/workspace', 'app'));
+    expect(findProjectRoot('/workspace/app/src/utils')).toBe('/workspace/app');
   });
 
   it('should return startPath if no markers found', () => {
