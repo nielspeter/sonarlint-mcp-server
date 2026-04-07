@@ -85,6 +85,31 @@ async function groupByScope(filePaths: string[]): Promise<Map<string, string[]>>
   return filesByScope;
 }
 
+function collectChunkResults(
+  rawResult: any,
+  chunk: string[],
+  minSeverity: string | undefined,
+  excludeRules: string[] | undefined,
+  allResults: FileResult[],
+): void {
+  const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
+
+  const issuesByFile = new Map<string, any[]>();
+  for (const issue of rawIssues) {
+    const arr = issuesByFile.get(issue.fileUri) || [];
+    arr.push(issue);
+    issuesByFile.set(issue.fileUri, arr);
+  }
+
+  for (const filePath of chunk) {
+    let issues = transformSloopIssues(issuesByFile.get(`file://${filePath}`) || []);
+    if (minSeverity) issues = filterBySeverity(issues, minSeverity);
+    if (excludeRules?.length) issues = issues.filter((i) => !excludeRules.includes(i.rule));
+
+    allResults.push({ filePath, language: detectLanguage(filePath), issueCount: issues.length, issues });
+  }
+}
+
 function buildSummary(allResults: FileResult[]): BatchAnalysisResult['summary'] {
   const bySeverity = { blocker: 0, critical: 0, major: 0, minor: 0, info: 0 };
 
@@ -132,25 +157,21 @@ export async function handleAnalyzeFiles(args: any) {
   const filesByScope = await groupByScope(filePaths);
   const allResults: FileResult[] = [];
 
-  for (const [scopeId, scopeFiles] of filesByScope) {
-    console.error(`[MCP] Analyzing ${scopeFiles.length} files in scope ${scopeId}`);
+  const CHUNK_SIZE = 10;
 
-    const rawResult = await bridge.analyzeFilesAndTrack(scopeId, scopeFiles);
-    const rawIssues = rawResult.raisedIssues?.length ? rawResult.raisedIssues : rawResult.rawIssues || [];
+  for (const [scopeId, scopeFilePaths] of filesByScope) {
+    console.error(`[MCP] Analyzing ${scopeFilePaths.length} files in scope ${scopeId}`);
 
-    const issuesByFile = new Map<string, any[]>();
-    for (const issue of rawIssues) {
-      const arr = issuesByFile.get(issue.fileUri) || [];
-      arr.push(issue);
-      issuesByFile.set(issue.fileUri, arr);
-    }
+    for (let i = 0; i < scopeFilePaths.length; i += CHUNK_SIZE) {
+      const chunk = scopeFilePaths.slice(i, i + CHUNK_SIZE);
+      const chunkNum = Math.floor(i / CHUNK_SIZE) + 1;
+      const totalChunks = Math.ceil(scopeFilePaths.length / CHUNK_SIZE);
+      if (totalChunks > 1) {
+        console.error(`[MCP] Chunk ${chunkNum}/${totalChunks} (${chunk.length} files)`);
+      }
 
-    for (const filePath of scopeFiles) {
-      let issues = transformSloopIssues(issuesByFile.get(`file://${filePath}`) || []);
-      if (minSeverity) issues = filterBySeverity(issues, minSeverity);
-      if (excludeRules?.length) issues = issues.filter((i) => !excludeRules.includes(i.rule));
-
-      allResults.push({ filePath, language: detectLanguage(filePath), issueCount: issues.length, issues });
+      const rawResult = await bridge.analyzeFilesAndTrack(scopeId, chunk);
+      collectChunkResults(rawResult, chunk, minSeverity, excludeRules, allResults);
     }
   }
 

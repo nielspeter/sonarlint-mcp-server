@@ -599,8 +599,11 @@ export class SloopBridge extends EventEmitter {
     const fileDtos = buildClientFileDtos(filePaths, configScopeId, projectRoot);
 
     // Store so listFiles callback returns only these files, not a full directory scan
+    // Deduplicate by URI to prevent unbounded growth across repeated analyses
     const existing = scopeFiles.get(configScopeId) || [];
-    scopeFiles.set(configScopeId, [...existing, ...fileDtos]);
+    const existingUris = new Set(existing.map((d: any) => d.uri));
+    const newDtos = fileDtos.filter((d: any) => !existingUris.has(d.uri));
+    scopeFiles.set(configScopeId, [...existing, ...newDtos]);
 
     this.sendNotification('file/didUpdateFileSystem', {
       addedFiles: fileDtos,
