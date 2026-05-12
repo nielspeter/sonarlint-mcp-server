@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.5](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.4...v0.5.5) (2026-05-12)
+
+
+### Bug Fixes
+
+* unpack SLOOP severityMode so all severity levels report correctly ([b9e9d48](https://github.com/nielspeter/sonarlint-mcp-server/commit/b9e9d485a6d3166d65f14f4feb509acafc9385a4))
+* use forward-slash paths in scope test for Windows compat ([1696132](https://github.com/nielspeter/sonarlint-mcp-server/commit/1696132f7ca6fb4ecb2da3b780cb3859750001fb))
+
 ### [0.5.4](https://github.com/nielspeter/sonarlint-mcp-server/compare/v0.5.3...v0.5.4) (2026-04-07)
 
 
