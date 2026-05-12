@@ -48,6 +48,33 @@ function example${index}() {
   return filePath;
 }
 
+/**
+ * JS file deliberately crafted to produce issues across multiple severity levels.
+ * Used by the severity-filter test which needs ≥2 distinct severities to verify
+ * that filtering actually drops issues.
+ *
+ * Rules expected to fire:
+ * - javascript:S1135 (TODO comment)      → INFO
+ * - javascript:S2068 (hardcoded password) → BLOCKER
+ * - javascript:S3504 (var usage)          → MAJOR-tier
+ * - javascript:S1763/S125/S1854 (unreachable / useless if / dead store) → MAJOR-tier
+ */
+function writeJsFileWithMixedSeverityIssues(dir: string, filename: string): string {
+  const filePath = join(dir, filename);
+  const content = `// TODO: tidy this up
+function example() {
+  var value = 0;
+  var password = "hunter2";
+  if (true) {
+    console.log(value, password);
+  }
+  return;
+}
+`;
+  writeFileSync(filePath, content, 'utf-8');
+  return filePath;
+}
+
 /** Python file with a known issue (unused import). */
 function writePyFileWithIssues(dir: string, filename: string): string {
   const filePath = join(dir, filename);
@@ -385,21 +412,71 @@ def greet():
     });
 
     it('should filter issues by minimum severity', async () => {
-      const filePath = writeJsFileWithIssues(projectDir, 'filter-test.js', 0);
+      const filePath = writeJsFileWithMixedSeverityIssues(projectDir, 'filter-test.js');
 
-      const allIssues = await client.callTool('check_quality', { filePath });
-      const majorOnly = await client.callTool('check_quality', {
-        filePath,
-        minSeverity: 'MAJOR',
-      });
+      const SEVERITIES = ['INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'] as const;
+      type Severity = (typeof SEVERITIES)[number];
 
-      expect(allIssues.isError).toBeFalsy();
-      expect(majorOnly.isError).toBeFalsy();
+      const totalIssues = (text: string): number => {
+        const m = text.match(/\*\*Total Issues\*\*:\s*(\d+)/);
+        if (!m) throw new Error(`Could not parse Total Issues from output:\n${text}`);
+        return Number(m[1]);
+      };
 
-      // Major-only should have same or fewer issues mentioned
-      const allText = allIssues.content[0].text;
-      const majorText = majorOnly.content[0].text;
-      expect(allText.length).toBeGreaterThanOrEqual(majorText.length);
+      const severitiesPresent = (text: string): Set<Severity> => {
+        const found = new Set<Severity>();
+        for (const sev of SEVERITIES) {
+          // Formatter prefixes each line with an emoji, e.g. `- 🔴 **BLOCKER**: 1`
+          if (new RegExp(`\\*\\*${sev}\\*\\*:\\s*\\d+`).test(text)) found.add(sev);
+        }
+        return found;
+      };
+
+      const allResult = await client.callTool('check_quality', { filePath });
+      expect(allResult.isError).toBeFalsy();
+      const allText = allResult.content[0].text;
+      const allCount = totalIssues(allText);
+      const present = severitiesPresent(allText);
+
+      // Sanity: fixture must produce issues, and at least 2 distinct severities,
+      // otherwise we can't meaningfully test that filtering changes behavior.
+      expect(allCount).toBeGreaterThan(0);
+      expect(
+        present.size,
+        `fixture produced only one severity (${[...present].join(',')}); add a higher- or lower-severity issue to writeJsFileWithIssues`,
+      ).toBeGreaterThanOrEqual(2);
+
+      // Filtering at each severity present must produce a monotonically non-increasing count.
+      const counts: Record<string, number> = { __all__: allCount };
+      for (const sev of SEVERITIES) {
+        const r = await client.callTool('check_quality', { filePath, minSeverity: sev });
+        expect(r.isError, `minSeverity=${sev} unexpectedly errored`).toBeFalsy();
+        counts[sev] = totalIssues(r.content[0].text);
+      }
+      // INFO threshold keeps everything; each step up keeps fewer or equal.
+      expect(counts.INFO).toBe(allCount);
+      expect(counts.INFO).toBeGreaterThanOrEqual(counts.MINOR);
+      expect(counts.MINOR).toBeGreaterThanOrEqual(counts.MAJOR);
+      expect(counts.MAJOR).toBeGreaterThanOrEqual(counts.CRITICAL);
+      expect(counts.CRITICAL).toBeGreaterThanOrEqual(counts.BLOCKER);
+
+      // Filtering above the lowest severity present must strictly drop something —
+      // this is what catches "every issue defaulted to MAJOR" regressions.
+      const lowestPresent = SEVERITIES.find((s) => present.has(s))!;
+      const nextUp = SEVERITIES[SEVERITIES.indexOf(lowestPresent) + 1];
+      if (nextUp) {
+        expect(
+          counts[nextUp],
+          `expected filtering at ${nextUp} to drop at least one ${lowestPresent} issue`,
+        ).toBeLessThan(allCount);
+      }
+
+      // Filtering above the highest severity present must drop everything.
+      const highestPresent = [...SEVERITIES].reverse().find((s) => present.has(s))!;
+      const aboveHighest = SEVERITIES[SEVERITIES.indexOf(highestPresent) + 1];
+      if (aboveHighest) {
+        expect(counts[aboveHighest]).toBe(0);
+      }
     }, 120_000);
   });
 });
