@@ -18,15 +18,10 @@ function baseIssue(overrides: Record<string, unknown> = {}) {
 
 describe('transformSloopIssues — severityMode unpacking', () => {
   describe('standard mode (severityMode = StandardModeDetails)', () => {
-    it.each(['INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'])(
-      'passes through %s severity verbatim',
-      (sev) => {
-        const [out] = transformSloopIssues([
-          baseIssue({ severityMode: { severity: sev, type: 'CODE_SMELL' } }),
-        ]);
-        expect(out.severity).toBe(sev);
-      },
-    );
+    it.each(['INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'])('passes through %s severity verbatim', (sev) => {
+      const [out] = transformSloopIssues([baseIssue({ severityMode: { severity: sev, type: 'CODE_SMELL' } })]);
+      expect(out.severity).toBe(sev);
+    });
   });
 
   describe('MQR mode (severityMode = MQRModeDetails)', () => {
